@@ -106,7 +106,7 @@ alfi restore --manifest latest
 
 | Group | Commands |
 | --- | --- |
-| Core | `status`, `watch`, `devices`, `tui` |
+| Core | `status`, `watch`, `probe`, `attrib`, `devices`, `tui` |
 | Optimise | `modes`, `optimize`, `ui`, `compile`, `appops`, `doze` |
 | Measure | `diagnose`, `bench`, `power`, `audit`, `vault` |
 | Recover | `restore`, `rescue`, `shizuku` |
@@ -114,6 +114,23 @@ alfi restore --manifest latest
 
 Flags pass straight through to the underlying engine, so `--dry-run`, `--json`,
 `--yes`, `--user` and `--device` behave the same everywhere.
+
+### Measure what the phone is actually waiting on
+
+```bash
+alfi probe      # stall time (PSI), thermal status, memory truth, battery
+alfi attrib     # runaway processes, dexopt state, wakeup counts
+```
+
+`probe` reads `/proc/pressure/*` — the same counters Android's own low-memory
+killer uses — so it can tell you **"memory is not your problem"** instead of
+showing 84% RAM and letting you guess. It also reports thermal throttling
+(honouring `IsStatusOverride`) and falls back to `/proc/vmstat` on kernels
+without PSI.
+
+`attrib` answers *who*: the largest resident processes (flagging one that eats
+a quarter of RAM), which apps are still interpreted (`status=verify`), and
+per-package wakeups. Both support `--json`.
 
 ### Live monitor
 
