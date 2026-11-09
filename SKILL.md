@@ -18,7 +18,7 @@ A comprehensive diagnostic, security audit, benchmarking, and multi-tier perform
    - Protects critical update engines (`com.oplus.ota`, `com.google.android.configupdater`), Samsung/Realme account logins, banking apps, and Widevine L1.
 3. **Deep Diagnostic Engine & Benchmarking**:
    - Profiles CPU load average, memory pressure, and zRAM utilization.
-   - Measures objective frame pacing, Jank Percentage (>19.1ms for 60Hz), P90/P99 latency, and 1% Low FPS via `scripts/bench.py`.
+   - Measures objective frame pacing, dynamic refresh-scaled Jank Percentage (60/90/120/144Hz), P90/P99 latency, and true 1% Low FPS via `scripts/bench.py`.
    - Identifies rogue background hogs (Microsoft Link to Windows, McAfee Device Security, MacroDroid accessibility loops).
 4. **Security & Sketchy App Auditor**:
    - Detects **Accessibility Service Hijackers** (banking trojans and keyloggers).
@@ -43,6 +43,7 @@ python scripts/connect.py
 - If the device is **Unauthorized**, wake the phone screen and guide the user to check *"Always allow from this computer"* and tap **OK**.
 - If no device is detected, provide the step-by-step Developer Options and USB Debugging instructions in `references/connection_guide.md`.
 - Supports **Wireless Debugging** (Android 11+) using `adb pair` and `adb connect`.
+- Use `[D] Device Manager` in `alfi` / `scripts/wizard.py` to seamlessly list, inspect, and switch active target phones when multiple devices are connected.
 
 ### Phase 2: Performance Diagnostics & Baseline Benchmark
 Perform a non-invasive performance audit and measure baseline UI frame pacing:
@@ -74,7 +75,7 @@ python scripts/modes.py
 # Or directly specify mode:
 python scripts/modes.py --mode low          # Zero risk: carrier stubs, 0.75x animations, cache trim
 python scripts/modes.py --mode medium       # Recommended: OEM telemetry, 0.5x, ART speed-profile, social AppOps
-python scripts/modes.py --mode high         # Aggressive: vendor bloat (Bixby/Joyose), restricted standby, 0 GB zRAM
+python scripts/modes.py --mode high         # Aggressive: vendor bloat (Bixby/Joyose), restricted standby, Virtual RAM guide
 python scripts/modes.py --mode ultra --force-ultra # High-Risk: OEM cloud/stores, 0.0x animations (NEVER run without user consent)
 ```
 > [!CAUTION]

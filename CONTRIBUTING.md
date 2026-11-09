@@ -1,4 +1,4 @@
-# Contributing to Android Lag Fixer
+# Contributing to ALFi — Android Lag Fixer
 
 We welcome community contributions to make Android devices cleaner, faster, more responsive, and secure!
 
@@ -35,7 +35,7 @@ All contributions must follow our zero-external-dependency rule:
    ```bash
    python -m unittest discover tests -v
    ```
-   All 49 unit and integration tests must pass with 100% success rate on Python 3.10 through 3.14.
+   All 94 unit and integration tests across 14 test modules must pass with 100% success rate on Python 3.9 through 3.14.
 
 2. **Syntax Compilation Check**:
    ```bash

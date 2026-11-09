@@ -8,6 +8,8 @@
   <a href="https://github.com/pavnxet/alfi/actions/workflows/ci.yml">
     <img src="https://github.com/pavnxet/alfi/actions/workflows/ci.yml/badge.svg" alt="CI Status" />
   </a>
+  <img src="https://img.shields.io/badge/Release-v1.2.0-00b0ff?style=flat&logo=github" alt="Release v1.2.0" />
+  <img src="https://img.shields.io/badge/Tests-94%20Passed-success?style=flat" alt="94 Tests Passing" />
   <img src="https://img.shields.io/badge/Platform-Android_9_--_17+-3DDC84?style=flat&logo=android&logoColor=white" alt="Android 9 to 17+" />
   <img src="https://img.shields.io/badge/Python-3.9+-3776AB?style=flat&logo=python&logoColor=white" alt="Python 3.9+" />
   <img src="https://img.shields.io/badge/Root-No_Root_Required-blue?style=flat" alt="No Root Required" />
@@ -51,7 +53,8 @@ In reality, Android lag and micro-stutters stem from 4 distinct kernel and userl
 
 ### 🏁 3. Objective Frame Pacing & Jank Benchmark Harness
 * **Real-World Framerate & Frame Pacing (`dumpsys gfxinfo framestats`)**: Measures actual frame durations directly from the Android graphics compositor.
-* **Empirical Speedup Metrics**: Calculates Jank Percentage (>19.1ms for 60Hz), P50/P90/P99 latency, and 1% Low FPS.
+* **Dynamic Refresh Rate Scaling (60Hz / 90Hz / 120Hz / 144Hz)**: Automatically reads display refresh rate and calculates precise jank thresholds (19.1ms @ 60Hz, 12.8ms @ 90Hz, 9.6ms @ 120Hz).
+* **Accurate 1% Low FPS**: Computes true average framerate across the slowest 1% worst frames, P50/P90/P99 latency, and dropped frame counts.
 * **Before-vs-After Comparison Table**: Run `--compare before.json after.json` to prove exact latency improvements with hard data.
 
 ### 🕵️ 4. Security & Sketchy Apps Auditor
@@ -121,7 +124,7 @@ Instead of forcing users to guess which tweaks to run, **ALFi** features an inte
 
   [3] 🟠 High (Aggressive Smoothness & Battery)
        Risk: Moderate | Audience: Power users, older devices, budget 2GB-4GB hardware
-       Details: Medium + vendor bloat (Bixby, Joyose), App Standby restricted, deep Doze, 0 GB zRAM.
+       Details: Medium + vendor bloat (Bixby, Joyose), App Standby restricted, deep Doze, Virtual RAM off guidance.
 
   [4] 🔴 Ultra (Extreme / Power Users / Probable Risk)
        Risk: High | Audience: Enthusiasts, secondary devices, dedicated gaming rigs
@@ -140,7 +143,7 @@ Instead of forcing users to guess which tweaks to run, **ALFi** features an inte
 | **ART Ahead-Of-Time Pre-Compile** | Default JIT. | `speed-profile` on top foreground user apps. | `speed` compilation on heavy apps & launcher. | Full system & user app `speed` AOT compilation. |
 | **Window & Transition Animations** | `0.75x` (gentle acceleration). | `0.5x` (snappy standard). | `0.5x` (snappy standard). | `0.0x` (animations off for instant app switching). |
 | **Doze & Battery Policy** | Untouched. | Clean telemetry pollers from `deviceidle whitelist`. | Enforce rapid Deep Doze on screen-off + allowlist cleanup. | Force Deep Doze + stripped allowlist + background alarm caps. |
-| **Virtual RAM (zRAM / RAM Plus)** | Untouched. | Untouched or tuned. | Set to `0 GB` (RAM Plus disabled) to stop `kswapd0` loops. | `0 GB` disabled completely for raw flash memory speed. |
+| **Virtual RAM (zRAM / RAM Plus)** | Untouched. | Untouched. | Guided disabling in Settings (stops CPU thrashing). | Full disabling guidance for zero paging latency. |
 | **Safety Gate Required** | Automatic (1-click). | Automatic (1-click). | Pre-flight manifest snapshot + summary preview. | **Double Gate: Dependency Graph Validation + Typing 'I UNDERSTAND'**. |
 
 ```bash
@@ -229,6 +232,9 @@ alfi/
 │
 ├── tests/
 │   ├── fixtures/                            # Real recorded device dumps (Samsung, Redmi, Pixel, Android 17)
+│   ├── test_diagnose.py                     # Mocked tests for CPU loadavg & zRAM swap diagnostics
+│   ├── test_restore.py                      # Mocked tests for manifest discovery & rollbacks
+│   ├── test_security_audit.py               # Mocked tests for 3rd-party installers & accessibility
 │   ├── test_modes.py                        # Mocked tests for 4 optimization modes & dependency safety
 │   ├── test_doze_boost.py                   # Mocked tests for Doze allowlist parsing & force-idle
 │   ├── test_power_audit.py                  # Mocked tests for batterystats parsing & comparison engine
@@ -238,7 +244,7 @@ alfi/
 │   ├── test_rescue.py                       # Mocked tests for emergency feature rescue & recovery
 │   ├── test_export_shizuku.py               # Mocked tests for Shizuku & rollback shell exporter
 │   ├── test_update_database.py              # Mocked tests for community list parsing & database merging
-│   ├── test_wizard.py                       # Mocked tests for terminal wizard, scrcpy & mode prompts
+│   ├── test_wizard.py                       # Mocked tests for terminal wizard, device manager & scrcpy
 │   └── test_oem_fixtures.py                 # Mock hardware integration tests against OEM fixtures
 │
 └── references/
@@ -260,7 +266,20 @@ alfi
 # Or from source:
 python scripts/wizard.py
 ```
-*(Provides a sleek, cyber-themed guided menu for multi-tier modes, diagnostics, frame pacing benchmarks, safe debloating, speed pre-compilation, AppOps limits, Shizuku export, and real-time screen mirroring).*
+*(Provides a sleek, cyber-themed guided menu for multi-tier modes, diagnostics, frame pacing benchmarks, safe debloating, speed pre-compilation, AppOps limits, Shizuku export, real-time screen mirroring, and multi-device target switching).*
+
+#### 📱 Interactive Device Manager & Target Switcher (`[D]`)
+Managing multiple connected devices (USB and Wireless)? Press **`D`** in the dashboard to list all attached devices, check their authorization state (with guidance for pending RSA keys), pair Android 11+ Wireless Debugging phones with 6-digit codes, or switch targets dynamically:
+```text
+╭────────────────────────────────────────────────────────────────────────╮
+│               ⚡ ALFi DEVICE MANAGER & TARGET SELECTOR ⚡               │
+╰────────────────────────────────────────────────────────────────────────╯
+  [ 1 ] 🟢 ACTIVE TARGET : SAMSUNG GALAXY S23 (USB)
+  [ 2 ] ⚪ AVAILABLE     : REDMI 220733SI (WIRELESS - 192.168.1.55:5555)
+  [ R ] 🔄 Refresh Device Scan
+  [ W ] 📶 Pair / Connect Wireless Phone (IP:Port + Pairing Code)
+  [ 0 ] 🔙 Return to Dashboard
+```
 
 ### 📦 Optional: Install Globally via pipx / pip
 You can install and run `ALFi` directly as a standalone system command:
@@ -273,9 +292,8 @@ alfi-modes       # 4-Tier Optimization Modes (Low, Medium, High, Ultra)
 alfi-power       # Empirical battery drain & wakelock proof
 alfi-doze        # Deep Doze & deviceidle allowlist cleaner
 alfi-rescue      # Quick launcher for emergency rescue
-alfi-bench       # Quick launcher for frame pacing benchmarks
-```
-lagfixer-bench   # Quick launcher for frame pacing benchmarks
+alfi-bench       # Dynamic frame pacing & jank benchmark suite
+alfi -s <serial> # Target specific USB or Wireless device directly
 ```
 
 ### Prerequisites

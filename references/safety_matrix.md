@@ -1,6 +1,6 @@
 # Safety Classification & Critical System Whitelist
 
-This document establishes the safety guardrails, mode boundaries, and dependency verification matrix enforced by **Phone Lag Fixer** to ensure zero disruption to official software updates (OTA), banking apps, security credentials, input methods, home screens, and cloud backups.
+This document establishes the safety guardrails, mode boundaries, and dependency verification matrix enforced by **ALFi — Android Lag Fixer** to ensure zero disruption to official software updates (OTA), banking apps, security credentials, input methods, home screens, and cloud backups.
 
 ---
 
@@ -12,7 +12,7 @@ Instead of treating all optimizations equally, the toolkit groups all modificati
 |---|---|---|---|
 | **`🟢 Low`** | **Zero Risk** | Carrier stubs, adware preloads, system cache trim, gentle 0.75x animation scales. Untouched OEM services and user apps. | Automatic 1-click execution. |
 | **`🟡 Medium`** | **Low Risk (Daily Driver)** | Low + OEM telemetry & tracking daemons, 0.5x animations, ART `speed-profile` compilation, social AppOps background limits. | Automatic 1-click execution. |
-| **`🟠 High`** | **Moderate Risk** | Medium + advanced vendor features (Bixby, AR Emoji, Joyose), App Standby `restricted`, Deep Doze allowlist cleanup, 0 GB zRAM. | Pre-flight manifest snapshot + summary preview. |
+| **`🟠 High`** | **Moderate Risk** | Medium + advanced vendor features (Bixby, AR Emoji, Joyose), App Standby `restricted`, Deep Doze allowlist cleanup, Virtual RAM off guidance. | Pre-flight manifest snapshot + summary preview. |
 | **`🔴 Ultra`** | **High Risk (Probable Breaking)** | High + duplicate OEM accounts (Samsung/Mi ID), duplicate app stores, secondary keyboards/launchers, 0.0x zero animations, full system ART `speed` compilation. | **Double Gate**: Mandatory dependency graph check + user must type `I UNDERSTAND`. |
 
 ---
