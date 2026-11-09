@@ -47,3 +47,13 @@ All contributions must follow our zero-external-dependency rule:
    - All package names must be validated against `validate_package_name(pkg)` to prevent shell injection.
    - Every mutation must automatically generate a pre-flight rollback manifest in `backups/`.
    - Never log personal identifiers, phone numbers, or hardware serial numbers in public commits.
+
+4. **UI changes go through `scripts/ui/`**:
+   - Render with `ui.box()`, `ui.kv()`, `ui.badge()`, `ui.progress()` — do not hand-pad strings.
+   - Pad and truncate only via `ui.display_width()`; `len()` is wrong for emoji and ANSI.
+   - Widgets stay pure: data + width + theme in, strings out. No I/O inside `widgets.py`.
+   - Keep `input()` call counts and order stable on existing screens — `tests/test_wizard.py`
+     patches `builtins.input` with fixed sequences.
+   - No new dependencies. Colour, width and unicode handling belong in `term.py`/`theme.py`.
+   - New UI behaviour needs a test in `tests/test_ui.py` (rendering) or
+     `tests/test_ui_safety.py` (safety ordering).
