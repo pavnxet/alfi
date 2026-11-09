@@ -115,3 +115,24 @@ class TestRender(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestManifestSelection(unittest.TestCase):
+    """verify must ignore side files that happen to live in backups/."""
+
+    def test_skips_files_without_packages(self):
+        tmp = tempfile.mkdtemp()
+        old_mode = os.path.join(tmp, "mode_low_20260101_000000.json")
+        newer_doze = os.path.join(tmp, "doze_manifest_pre_clean_20260102.json")
+        with open(old_mode, "w", encoding="utf-8") as f:
+            json.dump({"packages": {"a.b": {}}}, f)
+        with open(newer_doze, "w", encoding="utf-8") as f:
+            json.dump({"whitelist": {"user": []}}, f)
+        os.utime(old_mode, (100, 100))
+        os.utime(newer_doze, (200, 200))
+        with patch.object(verify, "BACKUPS", tmp):
+            self.assertEqual(verify.latest_manifest(), old_mode)
+
+    def test_empty_directory(self):
+        with patch.object(verify, "BACKUPS", tempfile.mkdtemp()):
+            self.assertIsNone(verify.latest_manifest())

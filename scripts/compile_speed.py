@@ -24,7 +24,7 @@ if SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, SCRIPTS_DIR)
 
 from connect import run_adb, get_connected_devices, get_device_info, validate_package_name
-from device_tracker import get_device_fingerprint, log_device_action, load_device_profile
+from device_tracker import get_device_fingerprint, log_device_action
 
 VALID_FILTERS = ["speed", "speed-profile", "everything", "verify"]
 

@@ -40,7 +40,6 @@ if os.name == "nt":
     except Exception:
         pass
 
-import shutil
 import unicodedata
 
 try:
@@ -56,7 +55,6 @@ from ui import ui as _ui_factory
 from ui.widgets import gauge, gradient, pad
 
 from connect import run_adb, get_connected_devices, get_device_info
-from device_tracker import get_device_fingerprint
 from modes import (
     plan_mode_optimization,
     PRESET_BACKGROUND_HOGS,
@@ -132,7 +130,7 @@ ACTIONS_MAP = {
         "args": []
     },
     "watch": {
-        "title": "Live Monitor (CPU, memory, swap, battery)",
+        "title": "Live Monitor Snapshot (CPU, memory, swap, battery)",
         "script": "monitor.py",
         "args": ["--count", "0"]
     },

@@ -69,7 +69,7 @@ def parse_deviceidle_whitelist(raw_output: str) -> Dict[str, List[str]]:
     all_packages: List[str] = []
 
     current_section = "system"
-    for line in raw_output.splitlines():
+    for line in (raw_output or "").splitlines():
         line = line.strip()
         if not line:
             continue

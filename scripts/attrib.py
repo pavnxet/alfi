@@ -29,7 +29,8 @@ RUNAWAY_MB = 400          # a single process this large is worth naming
 RUNAWAY_SHARE = 0.25      # ...or this share of physical RAM
 
 ATTRIB_CMD = (
-    "echo '@@PS'; ps -A -o PID,RSS,NAME 2>/dev/null | head -80; "
+    "echo '@@PS'; ps -A -o PID,RSS,NAME 2>/dev/null | sort -k2 -rn | head -25; "
+    "echo '@@MEM'; grep -E '^MemTotal' /proc/meminfo 2>/dev/null; "
     "echo '@@DEXOPT'; dumpsys package dexopt 2>/dev/null | head -400; "
     "echo '@@ALARM'; dumpsys alarm 2>/dev/null | grep -iE '[0-9]+ wakeups' | head -40"
 )
@@ -127,9 +128,13 @@ def collect(serial=None):
     dexopt = parse_dexopt(sections.get("DEXOPT"))
     alarms = parse_alarms(sections.get("ALARM"))
 
+    from probe import parse_mem
+    total_gb = parse_mem(sections.get("MEM")).get("total_gb", 0.0)
+
     return {
         "processes": processes[:15],
-        "runaways": flag_runaways(processes),
+        "total_ram_gb": total_gb,
+        "runaways": flag_runaways(processes, total_gb=total_gb),
         "dexopt": dexopt,
         "alarms": alarms[:10],
         "alarms_available": bool(alarms),

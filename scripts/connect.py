@@ -11,7 +11,6 @@ import os
 import re
 import subprocess
 import shutil
-import time
 
 PACKAGE_REGEX = re.compile(r"^[a-zA-Z0-9_]+(\.[a-zA-Z0-9_]+)+$")
 

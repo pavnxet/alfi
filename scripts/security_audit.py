@@ -8,15 +8,13 @@ Executes 100% remotely via ADB text streams—ZERO executable APK files touch th
 """
 
 import sys
-import json
 import re
 
 if sys.stdout and hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 if sys.stderr and hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-from connect import run_adb, get_connected_devices, get_device_info, validate_package_name
-from operations import apply_package_state
+from connect import run_adb, get_connected_devices, get_device_info
 
 DANGEROUS_PERMS = [
     "android.permission.BIND_ACCESSIBILITY_SERVICE",

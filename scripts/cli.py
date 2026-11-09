@@ -17,6 +17,7 @@ here and every flag the scripts already accept keeps working.
 from __future__ import annotations
 
 import importlib
+import json
 import sys
 
 import config
@@ -70,6 +71,7 @@ HELP = None  # built by render_help(); kept so older imports do not break
 
 def status(argv):
     """One line: device, platform, transport, battery, and the saved default mode."""
+    want_json = "--json" in (argv or [])
     from connect import get_connected_devices, get_device_info, run_adb
     from ui import ui as get_ui
 
@@ -81,7 +83,10 @@ def status(argv):
     if not authorised:
         pending = [d for d in devices if d.get("status") != "device"]
         line = "no device" + (" (one unauthorized, tap Allow)" if pending else "")
-        u.print(u.status([line]))
+        if want_json:
+            print(json.dumps({"connected": False, "pending": len(pending)}, indent=2))
+        else:
+            u.print(u.status([line]))
         return 1 if pending else 0
 
     serial = authorised[0]["serial"]
@@ -95,6 +100,20 @@ def status(argv):
             battery = match.group(1) + "%"
 
     transport = "wireless" if ":" in serial else "usb"
+    if want_json:
+        print(json.dumps({
+            "connected": True,
+            "serial": serial,
+            "brand": info.get("brand"),
+            "model": info.get("model"),
+            "android": info.get("android_version"),
+            "sdk": info.get("sdk_level"),
+            "transport": transport,
+            "battery": battery or None,
+            "devices": len(authorised),
+            "default_mode": cfg.get("mode"),
+        }, indent=2))
+        return 0
     u.print(u.status([
         "%s %s" % (str(info.get("brand", "?")).upper(), info.get("model", "?")),
         "Android %s (SDK %s)" % (info.get("android_version", "?"), info.get("sdk_level", "?")),
@@ -174,6 +193,9 @@ def help_command(argv):
 
     if not argv or argv[0] in ("-h", "--help"):
         print(render_help())
+        return 0
+    if argv[0] == "--json":
+        print(json.dumps(helpdata.COMMANDS, indent=2))
         return 0
 
     name = argv[0].lower()

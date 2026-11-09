@@ -105,7 +105,9 @@ def parse_thermal(block):
     # The dump prints cached and live copies of the same zone; keep the hottest.
     hottest = {}
     for name, value in zones:
-        if isinstance(value, float) and math.isnan(value):
+        if not isinstance(value, float):
+            continue                      # vendor sentinel or text, not a temperature
+        if math.isnan(value):
             continue
         if name not in hottest or value > hottest[name]:
             hottest[name] = value

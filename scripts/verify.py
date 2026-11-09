@@ -29,9 +29,22 @@ BASELINE = "verify_baseline.json"
 
 
 def latest_manifest():
-    files = sorted(glob.glob(os.path.join(BACKUPS, "*.json")))
-    files = [f for f in files if not f.endswith(BASELINE)]
-    return files[-1] if files else None
+    """Newest manifest that actually records packages (not a doze/bench side-file)."""
+    candidates = [f for f in glob.glob(os.path.join(BACKUPS, "*.json"))
+                  if not f.endswith(BASELINE)]
+    usable = []
+    for path in candidates:
+        try:
+            with open(path, "r", encoding="utf-8") as handle:
+                data = json.load(handle)
+        except (OSError, ValueError):
+            continue
+        if isinstance(data, dict) and ("packages" in data or "disabled_packages" in data):
+            usable.append(path)
+    if not usable:
+        return None
+    usable.sort(key=lambda p: os.path.getmtime(p))
+    return usable[-1]
 
 
 def read_boot_id(serial=None):

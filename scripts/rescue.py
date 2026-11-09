@@ -16,12 +16,11 @@ Captures pre-rescue snapshots in backups/ and logs events to local PC audit vaul
 
 import sys
 import os
-import re
 import glob
 import json
 import argparse
 from datetime import datetime
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Optional
 
 if sys.stdout and hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")

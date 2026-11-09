@@ -169,3 +169,36 @@ class TestConfig(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestJsonContract(unittest.TestCase):
+    """Every read-only command must emit parseable JSON when asked."""
+
+    def test_status_json(self):
+        info = {"brand": "samsung", "model": "SM-G973F", "android_version": "14", "sdk_level": "34"}
+        with patch("connect.get_connected_devices",
+                   return_value=[{"serial": "USB1", "status": "device"}]), \
+             patch("connect.get_device_info", return_value=info), \
+             patch("connect.run_adb", return_value=(True, "  level: 87")), \
+             patch("sys.stdout") as out:
+            self.assertEqual(cli.status(["--json"]), 0)
+            payload = "".join(c[0][0] for c in out.write.call_args_list)
+        import json as _json
+        self.assertTrue(_json.loads(payload)["connected"])
+
+    def test_status_json_when_disconnected(self):
+        with patch("connect.get_connected_devices", return_value=[]), \
+             patch("sys.stdout") as out:
+            self.assertEqual(cli.status(["--json"]), 0)
+            payload = "".join(c[0][0] for c in out.write.call_args_list)
+        import json as _json
+        self.assertFalse(_json.loads(payload)["connected"])
+
+    def test_help_json_lists_every_command(self):
+        import helpdata
+        with patch("sys.stdout") as out:
+            self.assertEqual(cli.help_command(["--json"]), 0)
+            payload = "".join(c[0][0] for c in out.write.call_args_list)
+        import json as _json
+        names = {entry["name"] for entry in _json.loads(payload)}
+        self.assertEqual(names, {c["name"] for c in helpdata.COMMANDS})

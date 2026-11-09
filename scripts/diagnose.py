@@ -15,7 +15,7 @@ if sys.stdout and hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 if sys.stderr and hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-from connect import find_adb, run_adb, get_connected_devices, get_device_info
+from connect import run_adb, get_connected_devices, get_device_info
 
 def check_cpu_and_load(serial=None):
     """Retrieve load average and top CPU consumers."""

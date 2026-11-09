@@ -166,3 +166,18 @@ class TestProbeAndRender(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestThermalRobustness(unittest.TestCase):
+    """A vendor sentinel in mValue must not take the whole probe down."""
+
+    def test_non_numeric_value_is_skipped(self):
+        block = ["Thermal Status: 1",
+                 "  Temperature{mValue=abc, mType=0, mName=AP, mStatus=1}",
+                 "  Temperature{mValue=41.2, mType=0, mName=CPU, mStatus=1}"]
+        hottest = probe.parse_thermal(block)["hottest"]
+        self.assertEqual(hottest, [("CPU", 41.2)])
+
+    def test_all_values_text_yields_no_zones(self):
+        block = ["Thermal Status: 0", "  Temperature{mValue=NaN, mName=AP}"]
+        self.assertEqual(probe.parse_thermal(block)["hottest"], [])

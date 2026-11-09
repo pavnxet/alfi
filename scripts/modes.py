@@ -13,7 +13,6 @@ Defines and executes the 4 calibrated optimization modes:
 import sys
 import os
 import json
-import time
 import argparse
 from datetime import datetime
 from typing import Dict, Any, List, Set, Tuple, Optional

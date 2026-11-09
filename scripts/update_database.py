@@ -203,7 +203,7 @@ def fetch_upstream_data(source_url: str = UPSTREAM_UAD_URL, timeout: int = 10) -
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             content = resp.read().decode("utf-8")
             return json.loads(content)
-    except Exception as e:
+    except Exception:
         return None
 
 def main():

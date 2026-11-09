@@ -18,19 +18,36 @@ if sys.stdout and hasattr(sys.stdout, "reconfigure"):
 if sys.stderr and hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
-from connect import run_adb, get_connected_devices, get_device_info
+from connect import get_connected_devices, get_device_info
 from operations import apply_package_state
 
 def get_latest_manifest() -> Optional[str]:
-    """Find the most recent restore manifest file."""
+    """Newest snapshot that actually records packages.
+
+    Mode runs write mode_<tier>_<ts>.json and the older path writes
+    restore_manifest_*.json, so both are candidates; anything without a
+    packages key (doze/bench side files) is skipped.
+    """
     manifest_dir = os.path.join(os.path.dirname(__file__), "..", "backups")
     if not os.path.exists(manifest_dir):
         return None
-    files = glob.glob(os.path.join(manifest_dir, "restore_manifest_*.json"))
-    if not files:
+    candidates = glob.glob(os.path.join(manifest_dir, "*.json"))
+    usable = []
+    for path in candidates:
+        try:
+            with open(path, "r", encoding="utf-8") as handle:
+                data = json.load(handle)
+        except (OSError, ValueError):
+            continue
+        legacy = os.path.basename(path).startswith("restore_manifest_")
+        has_packages = isinstance(data, dict) and (
+            "packages" in data or "disabled_packages" in data)
+        if legacy or has_packages:
+            usable.append(path)
+    if not usable:
         return None
-    files.sort(key=os.path.getmtime, reverse=True)
-    return files[0]
+    usable.sort(key=os.path.getmtime, reverse=True)
+    return usable[0]
 
 def main():
     parser = argparse.ArgumentParser(description="1-Click Disaster-Free Package Restoration Tool")

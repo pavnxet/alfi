@@ -9,7 +9,6 @@ and creates an automatic pre-flight restore manifest with verified state rollbac
 import sys
 import os
 import json
-import time
 import argparse
 import urllib.request
 from datetime import datetime

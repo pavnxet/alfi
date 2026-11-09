@@ -14,7 +14,7 @@ import os
 import json
 import argparse
 from datetime import datetime
-from typing import List, Dict, Any, Tuple
+from typing import List, Tuple
 
 if sys.stdout and hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")

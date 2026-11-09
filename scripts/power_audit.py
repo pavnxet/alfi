@@ -15,8 +15,7 @@ import os
 import re
 import json
 import argparse
-from datetime import datetime
-from typing import Dict, Any, List, Tuple, Optional
+from typing import Dict, Any, Tuple, Optional
 
 if sys.stdout and hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -27,7 +26,7 @@ SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
 if SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, SCRIPTS_DIR)
 
-from connect import run_adb, get_connected_devices, get_device_info
+from connect import run_adb, get_connected_devices
 
 def parse_batterystats(raw_output: str) -> Dict[str, Any]:
     """
@@ -53,7 +52,7 @@ def parse_batterystats(raw_output: str) -> Dict[str, Any]:
     # Wakelock line: "Wake lock u0a123: 15m 32s 100ms (45 times) realtime"
     # Or "u0a89: ... Partial: 23s 120ms (12 times)"
 
-    for line in raw_output.splitlines():
+    for line in (raw_output or "").splitlines():
         line_clean = line.strip()
 
         # Computed drain
@@ -112,7 +111,7 @@ def parse_batterystats(raw_output: str) -> Dict[str, Any]:
 def parse_duration_to_ms(duration_str: str) -> int:
     """Convert human duration string like '1h 23m 45s 500ms' to integer milliseconds."""
     total_ms = 0
-    duration_str = duration_str.strip()
+    duration_str = (duration_str or "").strip()
 
     # Match d, h, m, s, ms components
     d_m = re.search(r"(\d+)\s*d", duration_str)
@@ -206,7 +205,6 @@ def print_comparison_table(comparison: Dict[str, Any]):
     print(f" {'Metric':<25} | {'Before':<12} | {'After':<12} | {'Savings':<14}")
     print("-" * 70)
 
-    wl_sign = "" if wl["percentage_change"] > 0 else ""
     print(f" {'Partial Wakelocks':<25} | {str(wl['before']):<12} | {str(wl['after']):<12} | {wl['percentage_change']:+.1f}%")
     print(f" {'Wakelock Active (ms)':<25} | {str(wlt['before']):<12} | {str(wlt['after']):<12} | {wlt['percentage_change']:+.1f}%")
     print(f" {'Drain Rate (mAh/hr)':<25} | {str(dr['before']):<12} | {str(dr['after']):<12} | {dr['percentage_change']:+.1f}%")
