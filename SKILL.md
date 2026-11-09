@@ -1,11 +1,11 @@
 ---
-name: phone-lag-fixer
-description: Diagnose and fix Android phone lagging, stuttering, and overheating issues; detect sketchy apps, malware, and accessibility hijackers safely without risking the host PC; benchmark real frame pacing and jank reduction with dumpsys gfxinfo; optimize animation scales, eliminate zRAM compression thrashing, and debloat OEM telemetry safely with verified state restoration. Trigger when a user mentions phone lag, slow Android device, phone heating, battery drain, sketchy apps, mobile virus scan, debloating, or optimizing Samsung, Realme, Xiaomi, OnePlus, or other Android phones.
+name: alfi-android-lag-fixer
+description: ALFi - Android Lag Fixer: Diagnose and fix Android phone lagging, stuttering, and overheating issues; detect sketchy apps, malware, and accessibility hijackers safely without risking the host PC; benchmark real frame pacing and jank reduction with dumpsys gfxinfo; optimize animation scales, eliminate zRAM compression thrashing, and debloat OEM telemetry safely with verified state restoration. Trigger when a user mentions phone lag, ALFi, alfi, slow Android device, phone heating, battery drain, sketchy apps, mobile virus scan, debloating, or optimizing Samsung, Realme, Xiaomi, OnePlus, or other Android phones.
 ---
 
-# Phone Lag Fixer & Security Optimizer
+# ⚡ ALFi — Android Lag Fixer & Security Optimizer
 
-A comprehensive diagnostic, security audit, benchmarking, and performance optimization skill for Android devices using standard, non-root ADB protocols.
+A comprehensive diagnostic, security audit, benchmarking, and multi-tier performance optimization skill for Android devices using standard, non-root ADB protocols.
 
 ## Core Capabilities & Safety Guarantees
 

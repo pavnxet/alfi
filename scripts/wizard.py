@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-scripts/wizard.py - Unified Interactive Terminal Control Wizard
+scripts/wizard.py - ALFi: Android Lag Fixer Interactive Control Dashboard
 
-An interactive terminal dashboard and guided workflow engine that connects all
-multi-tier optimization modes (Low, Medium, High, Ultra), battery proofs, deep Doze,
-diagnostics, benchmarking, compilation, AppOps restriction, emergency rescue,
-restoration, and real-time screen mirroring into a clean, unified interface.
+A sleek, cyber-grade terminal control dashboard and guided workflow engine for ALFi.
+Connects multi-tier optimization (Low, Medium, High, Ultra), empirical battery proof,
+deep Doze auditing, diagnostics, benchmarks, ART compilation, AppOps limits, emergency
+rescue, and real-time screen mirroring into a clean, modern interface.
 """
 
 import sys
@@ -16,81 +16,110 @@ import argparse
 import json
 from typing import Dict, Any, Optional, Tuple, List
 
+# Ensure scripts directory is in sys.path
+SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
+if SCRIPTS_DIR not in sys.path:
+    sys.path.insert(0, SCRIPTS_DIR)
+
 if sys.stdout and hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 if sys.stderr and hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
-SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
-if SCRIPTS_DIR not in sys.path:
-    sys.path.insert(0, SCRIPTS_DIR)
+# Enable Windows Virtual Terminal Processing for ANSI colors
+if os.name == "nt":
+    try:
+        import ctypes
+        kernel32 = ctypes.windll.kernel32
+        hOut = kernel32.GetStdHandle(-11)
+        mode = ctypes.c_ulong()
+        kernel32.GetConsoleMode(hOut, ctypes.byref(mode))
+        mode.value |= 0x0004  # ENABLE_VIRTUAL_TERMINAL_PROCESSING
+        kernel32.SetConsoleMode(hOut, mode)
+    except Exception:
+        pass
 
 from connect import run_adb, get_connected_devices, get_device_info
 from device_tracker import get_device_fingerprint
 
+# ANSI Palette (ALFi Brand: Neon Mint Green, Dark Charcoal, Lightning Yellow, Crisp White)
+C_RESET = "\033[0m"
+C_BOLD = "\033[1m"
+C_DIM = "\033[2m"
+C_GREEN = "\033[1;38;2;0;230;118m"      # ALFi Neon Mint Green
+C_GREEN_DIM = "\033[38;2;0;180;90m"
+C_WHITE = "\033[1;38;2;255;255;255m"    # Crisp White
+C_YELLOW = "\033[1;38;2;255;235;59m"    # Lightning Bolt Yellow
+C_CYAN = "\033[1;38;2;0;229;255m"       # Electric Cyan
+C_ORANGE = "\033[1;38;2;255;152;0m"     # High Mode Amber
+C_RED = "\033[1;38;2;255;82;82m"        # Ultra Mode Crimson
+C_GRAY = "\033[38;2;120;144;156m"       # Slate Gray
+C_BORDER = "\033[38;2;55;71;79m"        # Dark Box Lines
+C_CARD_BG = "\033[48;2;24;32;36m"
+
 ACTIONS_MAP = {
     "modes": {
-        "title": "🚀 Multi-Tier Optimization (Low / Medium / High / Ultra)",
+        "title": "Multi-Tier Optimization (Low / Medium / High / Ultra)",
         "script": "modes.py",
         "args": []
     },
     "diagnose": {
-        "title": "🔍 Diagnose Root Causes (CPU, Memory, Swapping)",
+        "title": "Diagnose Root Causes (CPU, Memory Pressure, zRAM Swapping)",
         "script": "diagnose.py",
         "args": []
     },
     "bench": {
-        "title": "⏱️ Run Frame Pacing Benchmark (Jank Ratio & 1% Low FPS)",
+        "title": "Frame Pacing Benchmark (Jank Ratio & 1% Low FPS)",
         "script": "bench.py",
         "args": ["--app", "com.android.settings", "--duration", "8"]
     },
     "power": {
-        "title": "⚡ Empirical Battery & Wakelock Proof (Before vs After)",
+        "title": "BatteryStats & Wakelock Reduction Audit (Before vs After)",
         "script": "power_audit.py",
         "args": ["--audit"]
     },
     "doze": {
-        "title": "🔋 Deep Doze Enforcement & DeviceIdle Allowlist Audit",
+        "title": "Deep Doze Enforcement & DeviceIdle Whitelist Clean",
         "script": "doze_boost.py",
         "args": ["--audit"]
     },
     "compile": {
-        "title": "🚀 ART Ahead-Of-Time Pre-Compile (Speed Up Launch Stutter)",
+        "title": "Ahead-Of-Time (AOT) ART Pre-Compile (Kill Launch Stutter)",
         "script": "compile_speed.py",
         "args": ["--all-user-apps", "--filter", "speed-profile"]
     },
     "appops": {
-        "title": "🛡️ AppOps Background Limits (Throttle Social/Shopping Hogs)",
+        "title": "AppOps Background Limits (Throttle Social/Shopping Hogs)",
         "script": "appops_restrict.py",
         "args": ["--preset", "social", "--bucket", "restricted"]
     },
     "ui_speed": {
-        "title": "🎨 Fast 0.5x UI Animations & System Cache Trimming",
+        "title": "Fast 0.5x UI Animations & System Cache Maintenance",
         "script": "tweak_ui.py",
         "args": ["--scale", "0.5"]
     },
     "shizuku": {
-        "title": "📱 Export Standalone On-Device Shizuku Scripts",
+        "title": "Export Standalone On-Device Shizuku Scripts (.sh)",
         "script": "export_shizuku.py",
         "args": ["--profile", "all"]
     },
     "rescue": {
-        "title": "🚑 Emergency Feature Rescue (Fix Critical Broken Services)",
+        "title": "Emergency Feature Rescue (Fix Critical Broken Services)",
         "script": "rescue.py",
         "args": ["--fix-critical"]
     },
     "restore": {
-        "title": "🔄 1-Click Rollback / Restore From Latest Manifest",
+        "title": "1-Click Rollback / Restore From Latest Manifest",
         "script": "restore.py",
         "args": ["--manifest", "latest"]
     },
     "vault": {
-        "title": "📊 Multi-Device Audit Vault & History",
+        "title": "Multi-Device Hardware Audit Vault & History",
         "script": "device_tracker.py",
         "args": ["--status"]
     },
     "update_db": {
-        "title": "🌐 Update Community Debloat Package Database",
+        "title": "Update Community Debloat Catalog (UAD-ng Ingestion)",
         "script": "update_database.py",
         "args": []
     }
@@ -112,14 +141,18 @@ MENU_ORDER = [
     ("13", "update_db")
 ]
 
+def clear_screen():
+    """Clear terminal screen for a smooth app-like redraw."""
+    if os.environ.get("NO_COLOR") or not sys.stdout.isatty():
+        return
+    os.system("cls" if os.name == "nt" else "clear")
+
 def find_scrcpy_binary() -> Optional[str]:
     """Auto-detect scrcpy executable across system PATH and common installation paths."""
-    # 1. System PATH
     found = shutil.which("scrcpy")
     if found:
         return found
 
-    # 2. Common Windows download & tool directories
     candidates = [
         r"E:\Download\scrcpy-release-v3.2\scrcpy-win64-v3.2\scrcpy.exe",
         r"E:\Download\scrcpy-win64-v3.2\scrcpy.exe",
@@ -177,20 +210,130 @@ def run_wizard_action(
     except Exception as e:
         return False, str(e)
 
+def print_banner():
+    """Print the ALFi ASCII brand logo and subtitle."""
+    banner = f"""
+{C_GREEN}   █████╗ ██╗     ███████╗██╗
+  ██╔══██╗██║     ██╔════╝██║
+  ███████║██║     █████╗  ██║
+  ██╔══██║██║     ██╔══╝  ██║
+  ██║  ██║███████╗██║     ██║
+  ╚═╝  ╚═╝╚══════╝╚═╝     ╚═╝{C_RESET}
+  {C_YELLOW}⚡{C_RESET} {C_WHITE}A L F i{C_RESET}  {C_GRAY}—{C_RESET}  {C_GREEN}A N D R O I D   L A G   F I X E R{C_RESET}  {C_GRAY}[v1.1.0]{C_RESET}  {C_YELLOW}⚡{C_RESET}
+"""
+    print(banner)
+
+def print_device_card(device_info: Optional[Dict[str, Any]] = None):
+    """Render a modern rounded status card for connected hardware."""
+    width = 74
+    scrcpy_bin = find_scrcpy_binary()
+    mirror_label = f"{C_GREEN}READY{C_RESET}" if scrcpy_bin else f"{C_GRAY}NOT FOUND{C_RESET}"
+
+    print(f"{C_BORDER}╭{'─' * (width - 2)}╮{C_RESET}")
+    if device_info:
+        brand = device_info.get("brand", "Unknown").upper()
+        model = device_info.get("model", "Device")
+        android = device_info.get("android_version", "?")
+        sdk = device_info.get("sdk_level", "?")
+        patch = device_info.get("security_patch", "N/A")
+
+        line1 = f"  {C_GREEN}●{C_RESET} {C_WHITE}HARDWARE{C_RESET}  : {brand} {model}"
+        line2 = f"  {C_CYAN}●{C_RESET} {C_WHITE}PLATFORM{C_RESET}  : Android {android} (SDK {sdk})   {C_GRAY}● Patch: {patch}{C_RESET}"
+        line3 = f"  {C_GREEN}●{C_RESET} {C_WHITE}STATUS{C_RESET}    : ONLINE (ADB Authorized)   {C_GRAY}● Mirror: {mirror_label}{C_RESET}"
+        print(f"{C_BORDER}│{C_RESET}{line1:<95}{C_BORDER}│{C_RESET}")
+        print(f"{C_BORDER}│{C_RESET}{line2:<105}{C_BORDER}│{C_RESET}")
+        print(f"{C_BORDER}│{C_RESET}{line3:<105}{C_BORDER}│{C_RESET}")
+    else:
+        line1 = f"  {C_YELLOW}○{C_RESET} {C_WHITE}HARDWARE{C_RESET}  : NO PHYSICAL DEVICE CONNECTED (Simulator / Headless)"
+        line2 = f"  {C_CYAN}💡 TIP{C_RESET}       : Plug in USB cable or connect via Wireless Debugging"
+        line3 = f"  {C_GRAY}●{C_RESET} {C_WHITE}STATUS{C_RESET}    : STANDBY                   {C_GRAY}● Mirror: {mirror_label}{C_RESET}"
+        print(f"{C_BORDER}│{C_RESET}{line1:<84}{C_BORDER}│{C_RESET}")
+        print(f"{C_BORDER}│{C_RESET}{line2:<84}{C_BORDER}│{C_RESET}")
+        print(f"{C_BORDER}│{C_RESET}{line3:<105}{C_BORDER}│{C_RESET}")
+    print(f"{C_BORDER}╰{'─' * (width - 2)}╯{C_RESET}")
+
+def print_menu():
+    """Display categorized command decks with rounded box formatting."""
+    width = 74
+
+    def print_deck(title: str, items: List[Tuple[str, str, str]]):
+        header = f"─ {title} "
+        border_top = f"{C_BORDER}╭{header}{'─' * (width - 2 - len(header))}╮{C_RESET}"
+        print(border_top)
+        for num, icon, desc in items:
+            key_str = f"{C_GREEN}[{num.rjust(2)}]{C_RESET}"
+            content = f"  {key_str} {icon}  {C_WHITE}{desc}{C_RESET}"
+            print(f"{C_BORDER}│{C_RESET}{content:<90}{C_BORDER}│{C_RESET}")
+        print(f"{C_BORDER}╰{'─' * (width - 2)}╯{C_RESET}")
+
+    # Deck 1: Fast Track
+    print_deck("⚡ FAST TRACK: MULTI-TIER TUNING", [
+        (" 1", "🚀", "Multi-Tier Optimization (" + C_GREEN + "Low" + C_RESET + " | " + C_YELLOW + "Medium" + C_RESET + " | " + C_ORANGE + "High" + C_RESET + " | " + C_RED + "Ultra" + C_RESET + ")")
+    ])
+
+    # Deck 2: Diagnostics & Audit
+    print_deck("🔍 DIAGNOSTICS & HARDWARE AUDIT", [
+        (" 2", "🔍", "Diagnose Root Causes (CPU, Memory Pressure & zRAM Swapping)"),
+        (" 3", "⏱️ ", "Run Frame Pacing Benchmark (Jank Ratio & 1% Low FPS)"),
+        (" 4", "⚡", "BatteryStats & Wakelock Reduction Audit (Before vs After)"),
+        (" 5", "🔋", "Deep Doze Enforcement & DeviceIdle Battery Allowlist Clean")
+    ])
+
+    # Deck 3: Engine Tuning
+    print_deck("🚀 ENGINE TUNING & BACKGROUND RESTRAINTS", [
+        (" 6", "⚡", "Ahead-Of-Time (AOT) ART Pre-Compile (Speed Up Launches)"),
+        (" 7", "🛡️ ", "AppOps Background Limits (Throttle Social & Shopping Hogs)"),
+        (" 8", "🎨", "Fast 0.5x UI Animations & System Cache Maintenance")
+    ])
+
+    # Deck 4: Defense & Rescue
+    print_deck("🚑 DEFENSE, RESCUE & RECOVERY", [
+        (" 9", "📱", "Export Standalone On-Device Shizuku Scripts (.sh)"),
+        ("10", "🚑", "Emergency Feature Rescue (Fix Critical Broken Services)"),
+        ("11", "🔄", "1-Click Rollback / Restore From Latest Snapshot Manifest"),
+        ("12", "📊", "Multi-Device Hardware Audit Vault & History Records"),
+        ("13", "🌐", "Update Community Debloat Catalog (UAD-ng Ingestion)")
+    ])
+
+    # Deck 5: System Control
+    scrcpy_items = []
+    if find_scrcpy_binary():
+        scrcpy_items.append((" S", "📱", "Launch Real-Time Screen Mirroring (scrcpy)"))
+    scrcpy_items.append((" 0", "🚪", "Exit Dashboard"))
+    print_deck("⚙️ SYSTEM CONTROL", scrcpy_items)
+
 def prompt_mode_selection(dry_run: bool = False) -> Tuple[bool, str]:
-    """Prompt user interactively to pick among the 4 optimization modes."""
-    print("\n" + "=" * 70)
-    print(" 🚀 CHOOSE OPTIMIZATION MODE")
-    print("=" * 70)
-    print("  [1] 🟢 Low:    Carrier Stubs & Adware / 0.75x Animations / Zero Risk")
-    print("  [2] 🟡 Medium: Balanced Daily Driver / Telemetry / 0.5x / Recommended")
-    print("  [3] 🟠 High:   Aggressive / Vendor Bloat / Restricted Standby / 0 GB zRAM")
-    print("  [4] 🔴 Ultra:  High-Risk / Strip Accounts & Duplicate Stores / 0.0x Animations")
-    print("  [0] 🔙 Back to Main Menu")
-    print("=" * 70)
+    """Display modern ALFi 4-Tier Visual Selection Deck."""
+    width = 74
+    print(f"\n{C_BORDER}╭{'─' * (width - 2)}╮{C_RESET}")
+    title = f"{C_YELLOW}⚡{C_RESET} {C_WHITE}CHOOSE OPTIMIZATION ARCHITECTURE{C_RESET} {C_YELLOW}⚡{C_RESET}"
+    print(f"{C_BORDER}│{C_RESET}{title:^90}{C_BORDER}│{C_RESET}")
+    print(f"{C_BORDER}╰{'─' * (width - 2)}╯{C_RESET}\n")
+
+    print(f"  {C_GREEN}[ 1 ] 🟢 LOW MODE{C_RESET} ─────── {C_WHITE}SAFE BASELINE (Zero Risk){C_RESET}")
+    print(f"        {C_GRAY}• Scope   :{C_RESET} Carrier adware stubs, 0.75x animations, stale cache trim")
+    print(f"        {C_GRAY}• Target  :{C_RESET} Family phones, work profiles, zero tolerance for feature changes\n")
+
+    print(f"  {C_YELLOW}[ 2 ] 🟡 MEDIUM MODE{C_RESET} ──── {C_WHITE}BALANCED DAILY DRIVER (Recommended){C_RESET}")
+    print(f"        {C_GRAY}• Scope   :{C_RESET} Low + OEM telemetry (Glance, Meta, MSA), 0.5x animations,")
+    print(f"                    ART speed-profile on top user apps, social AppOps limits")
+    print(f"        {C_GRAY}• Target  :{C_RESET} Everyday smartphones wanting snappy UI & cooler battery\n")
+
+    print(f"  {C_ORANGE}[ 3 ] 🟠 HIGH MODE{C_RESET} ────── {C_WHITE}AGGRESSIVE ACCELERATION (Sluggish/Budget Devices){C_RESET}")
+    print(f"        {C_GRAY}• Scope   :{C_RESET} Medium + vendor bloat (Bixby, Joyose), App Standby RESTRICTED,")
+    print(f"                    Deep Doze allowlist cleanup, 0 GB zRAM / RAM Plus off")
+    print(f"        {C_GRAY}• Target  :{C_RESET} Power users, older devices, budget 2GB-4GB hardware with lag\n")
+
+    print(f"  {C_RED}[ 4 ] 🔴 ULTRA MODE{C_RESET} ───── {C_WHITE}EXTREME STRIP-DOWN (High-Risk / Power Users){C_RESET}")
+    print(f"        {C_GRAY}• Scope   :{C_RESET} High + duplicate OEM accounts (Samsung/Mi ID), duplicate stores,")
+    print(f"                    secondary keyboards/launchers, 0.0x zero animations, full AOT")
+    print(f"        {C_GRAY}• Safety  :{C_RESET} {C_RED}Double-Gate: Dependency Graph Check + Requires 'I UNDERSTAND'{C_RESET}\n")
+
+    print(f"  {C_GRAY}[ 0 ] 🔙 Return to Main Menu{C_RESET}")
+    print(f"{C_BORDER}{'─' * width}{C_RESET}")
 
     try:
-        choice = input("👉 Select mode [1-4]: ").strip()
+        choice = input(f"{C_GREEN}👉 Select mode [1-4]: {C_RESET}").strip()
     except (KeyboardInterrupt, EOFError):
         return False, "Aborted by user."
 
@@ -199,18 +342,17 @@ def prompt_mode_selection(dry_run: bool = False) -> Tuple[bool, str]:
         return False, "Cancelled or invalid mode selection."
 
     selected_mode = mode_map[choice]
-
     extra_args = ["--mode", selected_mode]
 
     if selected_mode == "ultra":
-        print("\n" + "!" * 70)
-        print(" ⚠️ CAUTION: ULTRA MODE SELECTED")
-        print("!" * 70)
-        print(" Ultra mode aggressively strips duplicate OEM stores, cloud accounts,")
-        print(" secondary keyboards/launchers, and sets animations to 0.0x.")
-        print("=" * 70)
+        print(f"\n{C_RED}{'!' * width}")
+        print(" ⚠️ CAUTION: ULTRA MODE SELECTED (High-Risk System Strip-Down)")
+        print(f"{'!' * width}{C_RESET}")
+        print(" Ultra mode aggressively strips duplicate OEM stores, cloud sync accounts,")
+        print(" secondary keyboards, and freezes background services completely.")
+        print(f"{C_BORDER}{'─' * width}{C_RESET}")
         try:
-            val = input(" 👉 Type 'I UNDERSTAND' to proceed: ").strip()
+            val = input(f"{C_YELLOW}👉 Type 'I UNDERSTAND' to confirm Ultra mode execution: {C_RESET}").strip()
         except (KeyboardInterrupt, EOFError):
             return False, "Aborted by user."
 
@@ -220,40 +362,8 @@ def prompt_mode_selection(dry_run: bool = False) -> Tuple[bool, str]:
 
     return run_wizard_action("modes", dry_run=dry_run, extra_args=extra_args)
 
-def print_header(device_info: Optional[Dict[str, Any]] = None):
-    """Print standard dashboard header."""
-    print("\n" + "=" * 70)
-    print(" 🚀 ANDROID LAG FIXER & SECURITY OPTIMIZER - CONTROL DASHBOARD")
-    print("=" * 70)
-    if device_info:
-        brand = device_info.get("brand", "Unknown").upper()
-        model = device_info.get("model", "Device")
-        android = device_info.get("android_version", "?")
-        sdk = device_info.get("sdk_level", "?")
-        print(f" 📱 Connected Device: {brand} {model} (Android {android}, SDK {sdk})")
-    else:
-        print(" ⚠️ No physical device connected (Interactive / Headless Mode)")
-
-    scrcpy_bin = find_scrcpy_binary()
-    if scrcpy_bin:
-        print(f" 📱 Screen Mirroring: scrcpy detected ({os.path.basename(scrcpy_bin)})")
-    print("=" * 70)
-
-def print_menu():
-    """Display interactive numbered menu."""
-    for num, key in MENU_ORDER:
-        title = ACTIONS_MAP[key]["title"]
-        print(f"  [{num.rjust(2)}] {title}")
-
-    scrcpy_bin = find_scrcpy_binary()
-    if scrcpy_bin:
-        print("  [ S] 📱 Launch Real-Time Screen Mirror (scrcpy)")
-
-    print("  [ 0] 🚪 Exit Dashboard")
-    print("=" * 70)
-
 def main():
-    parser = argparse.ArgumentParser(description="Unified Interactive Terminal Control Wizard")
+    parser = argparse.ArgumentParser(description="ALFi - Android Lag Fixer Control Wizard")
     parser.add_argument("--action", choices=list(ACTIONS_MAP.keys()), help="Execute a specific action non-interactively")
     parser.add_argument("--mode", choices=["low", "medium", "high", "ultra"], help="Target mode when running 'modes' action")
     parser.add_argument("--dry-run", action="store_true", help="Simulate action without executing live ADB mutations")
@@ -285,26 +395,27 @@ def main():
             print(output)
         sys.exit(0 if ok else 1)
 
-    # Interactive mode
-    print_header(device_info)
-    if not auth:
-        print("💡 Hint: Connect your phone via USB or Wireless Debugging to unlock all actions.")
-
+    # Interactive Dashboard Loop
     while True:
+        clear_screen()
+        print_banner()
+        print_device_card(device_info)
         print_menu()
+
         try:
-            choice = input(f"\n👉 Select an action [0-{len(MENU_ORDER)}]: ").strip()
+            choice = input(f"\n{C_GREEN}👉 Select an action [0-{len(MENU_ORDER)}]: {C_RESET}").strip()
         except (KeyboardInterrupt, EOFError):
-            print("\nExiting dashboard.")
+            print("\nExiting ALFi.")
             break
 
         if choice in ["0", "exit", "quit", "q"]:
-            print("\n👋 Goodbye!")
+            print(f"\n{C_GREEN}⚡ Thanks for using ALFi! Goodbye! ⚡{C_RESET}\n")
             break
 
         if choice.upper() == "S":
             ok, msg = launch_scrcpy(serial=serial)
             print(f"\n[*] {msg}\n")
+            input(f"{C_GRAY}Press Enter to return to dashboard...{C_RESET}")
             continue
 
         selected_key = None
@@ -314,18 +425,20 @@ def main():
                 break
 
         if not selected_key:
-            print(f"⚠️ Invalid choice. Please enter a number between 0 and {len(MENU_ORDER)}.\n")
+            print(f"\n{C_RED}⚠️ Invalid choice. Please enter a number between 0 and {len(MENU_ORDER)}.{C_RESET}\n")
+            input(f"{C_GRAY}Press Enter to continue...{C_RESET}")
             continue
 
         if selected_key == "modes":
             ok, out = prompt_mode_selection(dry_run=args.dry_run)
-            print(out)
+            print(f"\n{out}")
         else:
             print(f"\n[*] Executing: {ACTIONS_MAP[selected_key]['title']}...\n")
             ok, out = run_wizard_action(selected_key, dry_run=args.dry_run)
             print(out)
 
-        print("\n" + "-" * 70)
+        print(f"\n{C_BORDER}{'─' * 74}{C_RESET}")
+        input(f"{C_GRAY}Press Enter to return to ALFi dashboard...{C_RESET}")
 
 if __name__ == "__main__":
     main()

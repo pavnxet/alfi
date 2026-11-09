@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "android-lag-fixer"
 version = "1.1.0"
-description = "Safe, non-root Android lag fixer, multi-tier performance optimizer (Low/Medium/High/Ultra) & malware auditor over ADB"
+description = "ALFi - Android Lag Fixer: Safe, non-root Android performance optimizer (Low/Medium/High/Ultra), debloater & malware auditor over ADB"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.9"
@@ -13,6 +13,8 @@ authors = [
     { name = "pavnxet" }
 ]
 keywords = [
+    "alfi",
+    "android-lag-fixer",
     "android",
     "lag-fix",
     "debloater",
@@ -34,6 +36,15 @@ classifiers = [
 dependencies = []
 
 [project.scripts]
+alfi = "scripts.wizard:main"
+alfi-wizard = "scripts.wizard:main"
+alfi-modes = "scripts.modes:main"
+alfi-power = "scripts.power_audit:main"
+alfi-doze = "scripts.doze_boost:main"
+alfi-rescue = "scripts.rescue:main"
+alfi-bench = "scripts.bench:main"
+alfi-shizuku = "scripts.export_shizuku:main"
+alfi-update = "scripts.update_database:main"
 lagfixer = "scripts.wizard:main"
 lagfixer-wizard = "scripts.wizard:main"
 lagfixer-modes = "scripts.modes:main"

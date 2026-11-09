@@ -1,4 +1,8 @@
-# 📱 Android Lag Fixer & Performance Optimizer (Non-Root ADB)
+<p align="center">
+  <img src="assets/alfi_poster.webp" alt="ALFi - Android Lag Fixer" width="750" />
+</p>
+
+# ⚡ ALFi — Android Lag Fixer & Security Optimizer (Non-Root ADB)
 
 <p align="center">
   <a href="https://github.com/pavnxet/android-lag-fixer/actions/workflows/ci.yml">
@@ -8,11 +12,12 @@
   <img src="https://img.shields.io/badge/Python-3.9+-3776AB?style=flat&logo=python&logoColor=white" alt="Python 3.9+" />
   <img src="https://img.shields.io/badge/Root-No_Root_Required-blue?style=flat" alt="No Root Required" />
   <img src="https://img.shields.io/badge/Safety-Disables_Preserve_Data-success?style=flat" alt="Safe & Reversible" />
+  <img src="https://img.shields.io/badge/CLI-alfi-00e676?style=flat" alt="CLI Command" />
   <img src="https://img.shields.io/badge/License-MIT-orange?style=flat" alt="MIT License" />
 </p>
 
 <p align="center">
-  <strong>The definitive open-source Android lag fixer, safe OEM debloater, zRAM optimizer, and security audit toolkit.</strong><br />
+  <strong>ALFi is the definitive open-source Android lag fixer, multi-tier optimizer, safe OEM debloater, zRAM tuner, and security auditor.</strong><br />
   <em>Diagnose CPU bottlenecks, eliminate zRAM compression thrashing, detect accessibility trojans and ghost adware, prove framerate gains via real benchmark framestats, and boost UI responsiveness via standard ADB text streams.</em>
 </p>
 
@@ -248,21 +253,28 @@ android-lag-fixer/
 
 ## 🛠️ Getting Started in 3 Steps
 
-### ⚡ Fast-Track: Interactive Control Dashboard (Phase 4)
+### ⚡ Fast-Track: Interactive ALFi Control Dashboard
 If you prefer an all-in-one interactive menu over typing individual command line flags, simply launch:
 ```bash
+alfi
+# Or from source:
 python scripts/wizard.py
 ```
-*(Provides a guided numbered menu for diagnostics, frame pacing benchmarks, safe debloating, speed pre-compilation, AppOps limits, Shizuku export, and emergency rescue).*
+*(Provides a sleek, cyber-themed guided menu for multi-tier modes, diagnostics, frame pacing benchmarks, safe debloating, speed pre-compilation, AppOps limits, Shizuku export, and real-time screen mirroring).*
 
-### 📦 Optional: Install Globally via pipx / pip (Phase 5)
-You can install and run `android-lag-fixer` directly as a standalone system command:
+### 📦 Optional: Install Globally via pipx / pip
+You can install and run `ALFi` directly as a standalone system command:
 ```bash
 pipx install git+https://github.com/pavnxet/android-lag-fixer.git
 
 # Run directly from anywhere in your terminal:
-lagfixer         # Launches the interactive control dashboard
-lagfixer-rescue  # Quick launcher for emergency rescue
+alfi             # Launches the sleek ALFi interactive control dashboard
+alfi-modes       # 4-Tier Optimization Modes (Low, Medium, High, Ultra)
+alfi-power       # Empirical battery drain & wakelock proof
+alfi-doze        # Deep Doze & deviceidle allowlist cleaner
+alfi-rescue      # Quick launcher for emergency rescue
+alfi-bench       # Quick launcher for frame pacing benchmarks
+```
 lagfixer-bench   # Quick launcher for frame pacing benchmarks
 ```
 

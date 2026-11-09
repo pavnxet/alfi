@@ -522,19 +522,44 @@ def main():
     # Interactive mode selection if --mode is not provided
     selected_mode = args.mode
     if not selected_mode:
-        print("\n" + "=" * 70)
-        print(" 🚀 ANDROID LAG FIXER - SELECT OPTIMIZATION MODE")
-        print("=" * 70)
-        for i, m in enumerate(OPTIMIZATION_MODES, 1):
-            cfg = MODE_CONFIGS[m]
-            print(f"  [{i}] {cfg['emoji']} {cfg['label']}")
-            print(f"       Risk: {cfg['risk_level']} | Audience: {cfg['target_audience']}")
-            print(f"       Details: {cfg['description']}\n")
-        print("  [0] 🚪 Cancel and Exit")
-        print("=" * 70)
+        banner = """
+\033[1;38;2;0;230;118m   █████╗ ██╗     ███████╗██╗
+  ██╔══██╗██║     ██╔════╝██║
+  ███████║██║     █████╗  ██║
+  ██╔══██║██║     ██╔══╝  ██║
+  ██║  ██║███████╗██║     ██║
+  ╚═╝  ╚═╝╚══════╝╚═╝     ╚═╝\033[0m
+  \033[1;38;2;255;235;59m⚡\033[0m \033[1;38;2;255;255;255mA L F i\033[0m  \033[38;2;120;144;156m—\033[0m  \033[1;38;2;0;230;118mA N D R O I D   L A G   F I X E R\033[0m  \033[1;38;2;255;235;59m⚡\033[0m
+"""
+        print(banner)
+        print("\033[38;2;55;71;79m╭────────────────────────────────────────────────────────────────────────╮\033[0m")
+        print("\033[38;2;55;71;79m│\033[0m                \033[1;38;2;255;235;59m⚡\033[0m \033[1;38;2;255;255;255mSELECT OPTIMIZATION ARCHITECTURE\033[0m \033[1;38;2;255;235;59m⚡\033[0m                \033[38;2;55;71;79m│\033[0m")
+        print("\033[38;2;55;71;79m╰────────────────────────────────────────────────────────────────────────╯\033[0m\n")
+
+        print("  \033[1;38;2;0;230;118m[ 1 ] 🟢 LOW MODE\033[0m ─────── \033[1;38;2;255;255;255mSAFE BASELINE (Zero Risk)\033[0m")
+        print("        \033[38;2;120;144;156m• Scope   :\033[0m Carrier adware stubs, 0.75x animations, stale cache trim")
+        print("        \033[38;2;120;144;156m• Target  :\033[0m Family phones, work profiles, zero tolerance for feature changes\n")
+
+        print("  \033[1;38;2;255;235;59m[ 2 ] 🟡 MEDIUM MODE\033[0m ──── \033[1;38;2;255;255;255mBALANCED DAILY DRIVER (Recommended)\033[0m")
+        print("        \033[38;2;120;144;156m• Scope   :\033[0m Low + OEM telemetry (Glance, Meta, MSA), 0.5x animations,")
+        print("                    ART speed-profile on top user apps, social AppOps limits")
+        print("        \033[38;2;120;144;156m• Target  :\033[0m Everyday smartphones wanting snappy UI & cooler battery\n")
+
+        print("  \033[1;38;2;255;152;0m[ 3 ] 🟠 HIGH MODE\033[0m ────── \033[1;38;2;255;255;255mAGGRESSIVE ACCELERATION (Budget / Sluggish Devices)\033[0m")
+        print("        \033[38;2;120;144;156m• Scope   :\033[0m Medium + vendor bloat (Bixby, Joyose), App Standby RESTRICTED,")
+        print("                    Deep Doze allowlist cleanup, 0 GB zRAM / RAM Plus off")
+        print("        \033[38;2;120;144;156m• Target  :\033[0m Power users, older devices, budget 2GB-4GB hardware with lag\n")
+
+        print("  \033[1;38;2;255;82;82m[ 4 ] 🔴 ULTRA MODE\033[0m ───── \033[1;38;2;255;255;255mEXTREME STRIP-DOWN (High-Risk / Power Users)\033[0m")
+        print("        \033[38;2;120;144;156m• Scope   :\033[0m High + duplicate OEM accounts (Samsung/Mi ID), duplicate stores,")
+        print("                    secondary keyboards/launchers, 0.0x zero animations, full AOT")
+        print("        \033[38;2;120;144;156m• Safety  :\033[0m \033[1;38;2;255;82;82mDouble-Gate: Dependency Graph Check + Requires 'I UNDERSTAND'\033[0m\n")
+
+        print("  \033[38;2;120;144;156m[ 0 ] 🚪 Cancel and Exit\033[0m")
+        print("\033[38;2;55;71;79m──────────────────────────────────────────────────────────────────────────\033[0m")
 
         try:
-            choice = input("👉 Select mode [1-4]: ").strip()
+            choice = input("\033[1;38;2;0;230;118m👉 Select mode [1-4]: \033[0m").strip()
         except (KeyboardInterrupt, EOFError):
             print("\nExiting.")
             sys.exit(0)
@@ -544,7 +569,7 @@ def main():
 
         mode_map = {"1": "low", "2": "medium", "3": "high", "4": "ultra"}
         if choice not in mode_map:
-            print("❌ Invalid selection. Please choose a number between 1 and 4.")
+            print("\033[1;38;2;255;82;82m❌ Invalid selection. Please choose a number between 1 and 4.\033[0m")
             sys.exit(1)
         selected_mode = mode_map[choice]
 
