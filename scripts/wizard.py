@@ -253,7 +253,7 @@ def print_banner():
   ██╔══██║██║     ██╔══╝  ██║
   ██║  ██║███████╗██║     ██║
   ╚═╝  ╚═╝╚══════╝╚═╝     ╚═╝{C_RESET}
-  {C_YELLOW}⚡{C_RESET} {C_WHITE}A L F i{C_RESET}  {C_GRAY}—{C_RESET}  {C_GREEN}A N D R O I D   L A G   F I X E R{C_RESET}  {C_GRAY}[v1.1.0]{C_RESET}  {C_YELLOW}⚡{C_RESET}
+  {C_YELLOW}⚡{C_RESET} {C_WHITE}A L F i{C_RESET}  {C_GRAY}—{C_RESET}  {C_GREEN}A N D R O I D   L A G   F I X E R{C_RESET}  {C_GRAY}[v1.2.0]{C_RESET}  {C_YELLOW}⚡{C_RESET}
 """
     print(banner)
 

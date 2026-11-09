@@ -615,6 +615,7 @@ def execute_mode_optimization(
                 else:
                     ok, _ = set_appops_restriction(p, "ignore", serial=serial, dry_run=False)
                     if ok:
+                        print(f"    🛡️ Throttled background wakeups & network: {p}")
                         results["appops_applied"].append(p)
 
     # Step 4: Standby Buckets
@@ -626,6 +627,7 @@ def execute_mode_optimization(
             else:
                 ok, _ = set_standby_bucket(p, cfg["standby_bucket"], serial=serial, dry_run=False)
                 if ok:
+                    print(f"    🔋 Set App Standby bucket to {cfg['standby_bucket'].upper()}: {p}")
                     results["standby_bucket_applied"].append(p)
 
     # Step 5: ART Ahead-Of-Time Pre-Compilation
