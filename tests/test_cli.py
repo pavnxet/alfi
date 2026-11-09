@@ -89,6 +89,12 @@ class TestEntry(unittest.TestCase):
             self.assertEqual(cli.main([]), 0)
             self.assertEqual(d.call_args[0][0], "wizard")
 
+    def test_leading_flag_goes_to_dashboard(self):
+        with patch.object(cli, "dispatch", return_value=0) as d:
+            self.assertEqual(cli.main(["--action", "diagnose"]), 0)
+            self.assertEqual(d.call_args[0][0], "wizard")
+            self.assertEqual(d.call_args[0][1], ["--action", "diagnose"])
+
     def test_unknown_command_exits_2(self):
         with patch("sys.stderr"):
             self.assertEqual(cli.main(["nope"]), 2)

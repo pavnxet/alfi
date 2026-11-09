@@ -178,6 +178,10 @@ def main(argv=None):
     if not argv:
         return dispatch("wizard", [], cfg)
 
+    # A leading flag means "dashboard with these options" (`alfi --action modes`).
+    if argv[0].startswith("-"):
+        return dispatch("wizard", argv, cfg)
+
     command, rest = argv[0], argv[1:]
     if command in ("-h", "--help", "help"):
         print(HELP)
