@@ -372,12 +372,112 @@ def export_on_device_manifest(manifest_data: Dict[str, Any], serial: Optional[st
     except Exception:
         pass  # Non-fatal if sdcard is locked or unavailable
 
+def print_preflight_report(
+    plan: Dict[str, Any],
+    device_info: Dict[str, Any],
+    target_social: List[str],
+    target_compile: List[str]
+):
+    """Render a clean modern card previewing the optimization plan before execution."""
+    cfg = plan["config"]
+    approved_pkgs = plan["approved_packages"]
+    width = 74
+
+    C_BORDER = "\033[38;2;55;71;79m"
+    C_WHITE = "\033[1;38;2;255;255;255m"
+    C_GREEN = "\033[1;38;2;0;230;118m"
+    C_YELLOW = "\033[1;38;2;255;235;59m"
+    C_CYAN = "\033[1;38;2;0;229;255m"
+    C_GRAY = "\033[38;2;120;144;156m"
+    C_RESET = "\033[0m"
+
+    brand = device_info.get("brand", "Generic").upper()
+    model = device_info.get("model", "Device")
+    android_ver = device_info.get("android_version", "?")
+    sdk = device_info.get("sdk_level", "?")
+
+    print(f"\n{C_BORDER}╭{'─' * (width - 2)}╮{C_RESET}")
+    title = f"{C_YELLOW}📋{C_RESET} {C_WHITE}PRE-FLIGHT OPTIMIZATION AUDIT REPORT : [{cfg['emoji']} {cfg['label'].upper()}]{C_RESET}"
+    print(f"{C_BORDER}│{C_RESET}  {title:<90}{C_BORDER}│{C_RESET}")
+    print(f"{C_BORDER}╰{'─' * (width - 2)}╯{C_RESET}\n")
+
+    print(f"  {C_CYAN}• Target Device      :{C_RESET} {C_WHITE}{brand} {model}{C_RESET} (Android {android_ver}, SDK {sdk})")
+    print(f"  {C_GREEN}• Debloat Candidates :{C_RESET} {len(approved_pkgs)} bloatware & telemetry packages identified")
+    if target_social:
+        hog_names = ", ".join([p.split(".")[-1].capitalize() for p in target_social[:3]])
+        extra = f" (+{len(target_social)-3} more)" if len(target_social) > 3 else ""
+        print(f"  {C_YELLOW}• AppOps Restrictions:{C_RESET} {len(target_social)} background hogs ({hog_names}{extra})")
+    else:
+        print(f"  {C_GRAY}• AppOps Restrictions:{C_RESET} None installed")
+    print(f"  {C_CYAN}• UI Animation Scale :{C_RESET} Set to {cfg['animation_scale']}x (2x snappier gesture response)")
+    print(f"  {C_WHITE}• Cache Maintenance  :{C_RESET} Trim stale system caches without data loss")
+    if target_compile:
+        print(f"  {C_GREEN}• ART Pre-Compile    :{C_RESET} Speed-profile AOT compilation on {len(target_compile)} top apps")
+    print(f"  {C_GRAY}• Rollback Safety Net:{C_RESET} Pre-flight snapshot saved to backups/ for 1-click restore")
+    print(f"{C_BORDER}{'─' * width}{C_RESET}")
+
+def confirm_preflight_plan(
+    plan: Dict[str, Any],
+    device_info: Dict[str, Any],
+    target_social: List[str],
+    target_compile: List[str]
+) -> bool:
+    """Show pre-flight report and ask user for confirmation before mutating device."""
+    print_preflight_report(plan, device_info, target_social, target_compile)
+
+    C_BORDER = "\033[38;2;55;71;79m"
+    C_GREEN = "\033[1;38;2;0;230;118m"
+    C_CYAN = "\033[1;38;2;0;229;255m"
+    C_GRAY = "\033[38;2;120;144;156m"
+    C_YELLOW = "\033[1;38;2;255;235;59m"
+    C_RED = "\033[1;38;2;255;82;82m"
+    C_RESET = "\033[0m"
+
+    print(f"\n  {C_GREEN}[ Y ]{C_RESET} ✅ Confirm and Apply Optimization")
+    print(f"  {C_CYAN}[ D ]{C_RESET} 🔍 View Detailed Package List (Names & Explanations)")
+    print(f"  {C_GRAY}[ N ]{C_RESET} 🚪 Cancel and Return to Menu (No changes made)")
+    print(f"{C_BORDER}{'─' * 74}{C_RESET}")
+
+    while True:
+        try:
+            choice = input(f"\n{C_GREEN}👉 Proceed with optimization? [Y/d/n]: {C_RESET}").strip()
+        except (KeyboardInterrupt, EOFError):
+            print(f"\n{C_RED}⚠️ Operation cancelled by user. Zero changes made.{C_RESET}")
+            return False
+
+        if choice.lower() in ["y", "yes", ""]:
+            return True
+        elif choice.lower() in ["d", "details"]:
+            approved = plan["approved_packages"]
+            metadata = plan.get("package_metadata", {})
+            print(f"\n{C_CYAN}📦 PACKAGES IDENTIFIED FOR OPTIMIZATION ({len(approved)}):{C_RESET}")
+            if not approved:
+                print(f"  {C_GRAY}(No debloat packages found installed for this mode tier){C_RESET}")
+            for pkg in approved:
+                meta = metadata.get(pkg, {})
+                name = meta.get("name", pkg)
+                desc = meta.get("description", "Identified by community debloat database.")
+                print(f"  • {C_GREEN}{pkg}{C_RESET}")
+                print(f"    {C_GRAY}└─ {name}: {desc}{C_RESET}")
+            if target_social:
+                print(f"\n{C_YELLOW}🛡️ APPOPS BACKGROUND LIMITS ({len(target_social)}):{C_RESET}")
+                for p in target_social:
+                    print(f"  • {C_YELLOW}{p}{C_RESET} (Freeze background CPU upon minimizing)")
+            print(f"\n{C_BORDER}{'─' * 74}{C_RESET}")
+            print(f"  {C_GREEN}[ Y ] Confirm & Apply{C_RESET}  |  {C_GRAY}[ N ] Cancel{C_RESET}")
+        elif choice.lower() in ["n", "no", "cancel", "c", "0"]:
+            print(f"\n{C_RED}⚠️ Optimization cancelled. No changes were made to your device.{C_RESET}")
+            return False
+        else:
+            print(f"{C_RED}Please type 'Y' to proceed, 'D' to inspect packages, or 'N' to cancel.{C_RESET}")
+
 def execute_mode_optimization(
     mode: str,
     serial: Optional[str] = None,
     dry_run: bool = False,
     force_ultra: bool = False,
-    interactive_confirm: bool = False
+    interactive_confirm: bool = False,
+    auto_confirm: bool = False
 ) -> Dict[str, Any]:
     """Execute complete optimization workflow for the chosen mode."""
     cfg = get_mode_config(mode)
@@ -417,6 +517,18 @@ def execute_mode_optimization(
     # Formulate plan
     plan = plan_mode_optimization(mode, installed, manufacturer=manufacturer, db=db)
     approved_pkgs = plan["approved_packages"]
+    target_social = [p for p in PRESET_BACKGROUND_HOGS if p in installed] if cfg["appops_preset"] else []
+    target_compile = [p for p in PRESET_BACKGROUND_HOGS if p in installed][:5] if cfg["art_filter"] else []
+
+    # Pre-Flight Confirmation Gate
+    if interactive_confirm and not auto_confirm:
+        if not confirm_preflight_plan(plan, device_info, target_social, target_compile):
+            return {
+                "mode": mode,
+                "success": False,
+                "error": "Optimization cancelled by user. Zero changes made to your device.",
+                "aborted": True
+            }
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     manifest_id = f"mode_{mode}_{timestamp}"
@@ -536,6 +648,7 @@ def main():
     parser = argparse.ArgumentParser(description="Multi-Tier Android Optimization Engine")
     parser.add_argument("--mode", choices=OPTIMIZATION_MODES, help="Target optimization mode: low, medium, high, ultra")
     parser.add_argument("--dry-run", action="store_true", help="Simulate actions without modifying device state")
+    parser.add_argument("--yes", "-y", action="store_true", help="Bypass interactive confirmation and auto-approve")
     parser.add_argument("--force-ultra", action="store_true", help="Bypass interactive safety confirmation for Ultra mode")
     parser.add_argument("--json", action="store_true", help="Output machine-readable JSON")
     args = parser.parse_args()
@@ -605,7 +718,8 @@ def main():
         serial=serial,
         dry_run=args.dry_run,
         force_ultra=args.force_ultra,
-        interactive_confirm=(not args.force_ultra)
+        interactive_confirm=(not args.yes and not args.force_ultra and not args.json),
+        auto_confirm=args.yes
     )
 
     if args.json:

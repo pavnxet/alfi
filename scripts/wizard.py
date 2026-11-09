@@ -41,6 +41,13 @@ if os.name == "nt":
 
 from connect import run_adb, get_connected_devices, get_device_info
 from device_tracker import get_device_fingerprint
+from modes import (
+    plan_mode_optimization,
+    PRESET_BACKGROUND_HOGS,
+    load_database,
+    get_installed_packages,
+    confirm_preflight_plan
+)
 
 # ANSI Palette (ALFi Brand: Neon Mint Green, Dark Charcoal, Lightning Yellow, Crisp White)
 C_RESET = "\033[0m"
@@ -514,7 +521,25 @@ def prompt_mode_selection(dry_run: bool = False, serial: Optional[str] = None) -
         return False, "Cancelled or invalid mode selection."
 
     selected_mode = mode_map[choice]
-    extra_args = ["--mode", selected_mode]
+
+    # Fetch device state & formulate pre-flight action plan
+    installed = get_installed_packages(serial=serial)
+    device_info = get_device_info(serial) if serial else None
+    if not device_info:
+        device_info = {"brand": "Generic", "model": "Device", "android_version": "14", "sdk_level": "34"}
+    manufacturer = device_info.get("brand", "generic")
+    db = load_database()
+    plan = plan_mode_optimization(selected_mode, installed, manufacturer=manufacturer, db=db)
+    cfg = plan["config"]
+    target_social = [p for p in PRESET_BACKGROUND_HOGS if p in installed] if cfg["appops_preset"] else []
+    target_compile = [p for p in PRESET_BACKGROUND_HOGS if p in installed][:5] if cfg["art_filter"] else []
+
+    # Display Pre-Flight Action Report & Confirmation Gate
+    confirmed = confirm_preflight_plan(plan, device_info, target_social, target_compile)
+    if not confirmed:
+        return False, "Optimization cancelled by user. Zero changes were made to your device."
+
+    extra_args = ["--mode", selected_mode, "--yes"]
 
     if selected_mode == "ultra":
         clear_screen()
@@ -557,7 +582,7 @@ def main():
     if args.action:
         extra_args = []
         if args.action == "modes" and args.mode:
-            extra_args = ["--mode", args.mode]
+            extra_args = ["--mode", args.mode, "--yes"]
             if args.mode == "ultra":
                 extra_args.append("--force-ultra")
         ok, output = run_wizard_action(args.action, dry_run=args.dry_run, extra_args=extra_args, serial=active_serial)

@@ -86,31 +86,46 @@ class TestWizard(unittest.TestCase):
         self.assertEqual(args[0], "E:\\scrcpy.exe")
         self.assertIn("--stay-awake", args)
 
-    @patch("builtins.input", side_effect=["1"])
+    @patch("builtins.input", side_effect=["1", "Y"])
     @patch("wizard.run_wizard_action", return_value=(True, "Low mode applied"))
     def test_prompt_mode_selection_low(self, mock_run, mock_input):
-        """Selecting [1] routes to Low mode without safety gate."""
+        """Selecting [1] and confirming 'Y' in pre-flight report routes to Low mode."""
         ok, out = prompt_mode_selection(dry_run=True)
         self.assertTrue(ok)
-        mock_run.assert_called_once_with("modes", dry_run=True, extra_args=["--mode", "low"], serial=None)
+        mock_run.assert_called_once_with("modes", dry_run=True, extra_args=["--mode", "low", "--yes"], serial=None)
 
-    @patch("builtins.input", side_effect=["4", "NOPE"])
+    @patch("builtins.input", side_effect=["2", "N"])
+    def test_prompt_mode_selection_cancelled(self, mock_input):
+        """Selecting [2] and cancelling 'N' in pre-flight report aborts with zero changes."""
+        ok, out = prompt_mode_selection(dry_run=True)
+        self.assertFalse(ok)
+        self.assertIn("cancelled by user", out.lower())
+
+    @patch("builtins.input", side_effect=["2", "D", "Y"])
+    @patch("wizard.run_wizard_action", return_value=(True, "Medium mode applied"))
+    def test_prompt_mode_selection_details_then_confirmed(self, mock_run, mock_input):
+        """Selecting [2], inspecting details 'D', then confirming 'Y' proceeds with optimization."""
+        ok, out = prompt_mode_selection(dry_run=True)
+        self.assertTrue(ok)
+        mock_run.assert_called_once_with("modes", dry_run=True, extra_args=["--mode", "medium", "--yes"], serial=None)
+
+    @patch("builtins.input", side_effect=["4", "Y", "NOPE"])
     def test_prompt_mode_selection_ultra_aborted(self, mock_input):
         """Selecting [4] Ultra and failing to type 'I UNDERSTAND' aborts execution."""
         ok, out = prompt_mode_selection(dry_run=True)
         self.assertFalse(ok)
         self.assertIn("Safety Gate", out)
 
-    @patch("builtins.input", side_effect=["4", "I UNDERSTAND"])
+    @patch("builtins.input", side_effect=["4", "Y", "I UNDERSTAND"])
     @patch("wizard.run_wizard_action", return_value=(True, "Ultra mode applied"))
     def test_prompt_mode_selection_ultra_confirmed(self, mock_run, mock_input):
-        """Selecting [4] Ultra and typing 'I UNDERSTAND' proceeds with --force-ultra."""
+        """Selecting [4] Ultra, confirming pre-flight 'Y', and typing 'I UNDERSTAND' proceeds."""
         ok, out = prompt_mode_selection(dry_run=True)
         self.assertTrue(ok)
         mock_run.assert_called_once_with(
             "modes",
             dry_run=True,
-            extra_args=["--mode", "ultra", "--force-ultra"],
+            extra_args=["--mode", "ultra", "--yes", "--force-ultra"],
             serial=None
         )
 

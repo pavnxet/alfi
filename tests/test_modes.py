@@ -230,5 +230,42 @@ class TestOptimizationModes(unittest.TestCase):
                     self.assertEqual(res["mode"], mode)
                     self.assertTrue(res["dry_run"])
 
+    @patch("builtins.input", side_effect=["Y"])
+    def test_confirm_preflight_plan_accept(self, mock_input):
+        """User confirming 'Y' in pre-flight report returns True."""
+        from modes import confirm_preflight_plan, plan_mode_optimization
+        plan = plan_mode_optimization("medium", {"com.facebook.katana"})
+        dev = {"brand": "Realme", "model": "RMX3867", "android_version": "14", "sdk_level": "34"}
+        confirmed = confirm_preflight_plan(plan, dev, ["com.facebook.katana"], ["com.facebook.katana"])
+        self.assertTrue(confirmed)
+
+    @patch("builtins.input", side_effect=["N"])
+    def test_confirm_preflight_plan_reject(self, mock_input):
+        """User cancelling 'N' in pre-flight report returns False."""
+        from modes import confirm_preflight_plan, plan_mode_optimization
+        plan = plan_mode_optimization("medium", {"com.facebook.katana"})
+        dev = {"brand": "Realme", "model": "RMX3867", "android_version": "14", "sdk_level": "34"}
+        confirmed = confirm_preflight_plan(plan, dev, [], [])
+        self.assertFalse(confirmed)
+
+    @patch("builtins.input", side_effect=["D", "Y"])
+    def test_confirm_preflight_plan_details_then_accept(self, mock_input):
+        """User requesting 'D' details then entering 'Y' inspects and confirms."""
+        from modes import confirm_preflight_plan, plan_mode_optimization
+        plan = plan_mode_optimization("medium", {"com.facebook.katana"})
+        dev = {"brand": "Realme", "model": "RMX3867", "android_version": "14", "sdk_level": "34"}
+        confirmed = confirm_preflight_plan(plan, dev, ["com.facebook.katana"], [])
+        self.assertTrue(confirmed)
+
+    @patch("modes.confirm_preflight_plan", return_value=False)
+    def test_execute_mode_optimization_preflight_cancelled(self, mock_confirm):
+        """Cancelling pre-flight confirmation cleanly aborts optimization."""
+        with patch("modes.get_installed_packages", return_value={"com.facebook.katana"}):
+            with patch("modes.get_device_info", return_value={"brand": "Realme", "model": "RMX3867"}):
+                res = execute_mode_optimization("medium", dry_run=True, interactive_confirm=True)
+                self.assertFalse(res["success"])
+                self.assertTrue(res["aborted"])
+                self.assertIn("cancelled by user", res["error"])
+
 if __name__ == "__main__":
     unittest.main()
