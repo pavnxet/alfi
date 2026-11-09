@@ -33,6 +33,20 @@ from tweak_ui import set_animation_scale, trim_system_cache
 from appops_restrict import set_appops_restriction, set_standby_bucket, PRESET_BACKGROUND_HOGS
 from compile_speed import compile_package
 
+def clear_screen():
+    """Clear terminal screen and wipe scrollback buffer for a smooth app-like redraw."""
+    if os.environ.get("NO_COLOR"):
+        return
+    try:
+        if os.name == "nt":
+            os.system("cls")
+        else:
+            os.system("clear")
+        sys.stdout.write("\033[H\033[2J\033[3J")
+        sys.stdout.flush()
+    except Exception:
+        pass
+
 OPTIMIZATION_MODES = ["low", "medium", "high", "ultra"]
 
 CRITICAL_NEVER_DISABLE: Set[str] = {
@@ -522,6 +536,7 @@ def main():
     # Interactive mode selection if --mode is not provided
     selected_mode = args.mode
     if not selected_mode:
+        clear_screen()
         banner = """
 \033[1;38;2;0;230;118m   █████╗ ██╗     ███████╗██╗
   ██╔══██╗██║     ██╔════╝██║

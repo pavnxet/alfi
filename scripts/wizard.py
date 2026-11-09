@@ -142,10 +142,18 @@ MENU_ORDER = [
 ]
 
 def clear_screen():
-    """Clear terminal screen for a smooth app-like redraw."""
-    if os.environ.get("NO_COLOR") or not sys.stdout.isatty():
+    """Clear terminal screen and wipe scrollback buffer for a smooth app-like redraw."""
+    if os.environ.get("NO_COLOR"):
         return
-    os.system("cls" if os.name == "nt" else "clear")
+    try:
+        if os.name == "nt":
+            os.system("cls")
+        else:
+            os.system("clear")
+        sys.stdout.write("\033[H\033[2J\033[3J")
+        sys.stdout.flush()
+    except Exception:
+        pass
 
 def find_scrcpy_binary() -> Optional[str]:
     """Auto-detect scrcpy executable across system PATH and common installation paths."""
@@ -313,6 +321,8 @@ def print_menu():
 
 def prompt_mode_selection(dry_run: bool = False) -> Tuple[bool, str]:
     """Display modern ALFi 4-Tier Visual Selection Deck."""
+    clear_screen()
+    print_banner()
     width = 74
     print(f"\n{C_BORDER}╭{'─' * (width - 2)}╮{C_RESET}")
     title = f"{C_YELLOW}⚡{C_RESET} {C_WHITE}CHOOSE OPTIMIZATION ARCHITECTURE{C_RESET} {C_YELLOW}⚡{C_RESET}"
@@ -346,6 +356,9 @@ def prompt_mode_selection(dry_run: bool = False) -> Tuple[bool, str]:
     except (KeyboardInterrupt, EOFError):
         return False, "Aborted by user."
 
+    if choice in ["0", "q", "exit", "back"]:
+        return False, "Returned to Main Menu."
+
     mode_map = {"1": "low", "2": "medium", "3": "high", "4": "ultra"}
     if choice not in mode_map:
         return False, "Cancelled or invalid mode selection."
@@ -354,6 +367,8 @@ def prompt_mode_selection(dry_run: bool = False) -> Tuple[bool, str]:
     extra_args = ["--mode", selected_mode]
 
     if selected_mode == "ultra":
+        clear_screen()
+        print_banner()
         print(f"\n{C_RED}{'!' * width}")
         print(" ⚠️ CAUTION: ULTRA MODE SELECTED (High-Risk System Strip-Down)")
         print(f"{'!' * width}{C_RESET}")
@@ -440,8 +455,12 @@ def main():
 
         if selected_key == "modes":
             ok, out = prompt_mode_selection(dry_run=args.dry_run)
+            clear_screen()
+            print_banner()
             print(f"\n{out}")
         else:
+            clear_screen()
+            print_banner()
             print(f"\n[*] Executing: {ACTIONS_MAP[selected_key]['title']}...\n")
             ok, out = run_wizard_action(selected_key, dry_run=args.dry_run)
             print(out)
