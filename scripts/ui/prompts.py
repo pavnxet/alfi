@@ -20,7 +20,7 @@ def read_line(prompt_text="", default=""):
     """Read one line. Returns None on EOF/Ctrl-C. Empty input yields `default`."""
     try:
         value = input(prompt_text)
-    except (EOFError, KeyboardInterrupt):
+    except (EOFError, KeyboardInterrupt, StopIteration):
         return None
     if value is None:
         return None

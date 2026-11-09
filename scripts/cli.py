@@ -46,41 +46,26 @@ COMMANDS = {
     "vault": "device_tracker",
     "update": "update_database",
     "config": None,
+    "help": None,
 }
 
-HELP = """usage: alfi [command] [options]
+def render_help():
+    """Grouped command reference, generated from helpdata so it cannot drift."""
+    import helpdata
 
-  alfi                       interactive dashboard (default)
-  alfi status                one-line device status
-  alfi watch                 live CPU / memory / swap / battery monitor
-  alfi probe                 stall time (PSI), thermal status, memory truth
-  alfi attrib                who is causing it: runaway processes, dexopt, wakeups
-  alfi verify                did the debloat survive a reboot? (--baseline first)
-  alfi devices               list attached devices and pairing help
+    lines = ["usage: alfi [command] [options]", ""]
+    for group, entries in helpdata.grouped():
+        lines.append(group.upper())
+        for entry in entries:
+            lines.append("  " + helpdata.summary_line(entry))
+        lines.append("")
+    lines.append("  * changes the device - pair it with --dry-run first")
+    lines.append("  alfi help <command> for what one command reads or changes")
+    return "\n".join(lines)
 
-  alfi modes   [--mode low|medium|high|ultra] [--dry-run] [--yes]
-  alfi optimize [--dry-run]  classic OEM debloater
-  alfi diagnose              CPU, memory pressure and zRAM report
-  alfi bench   [--app PKG]   frame pacing benchmark
-  alfi power                 batterystats and wakelock audit
-  alfi doze    [--clean]     DeviceIdle allowlist audit
-  alfi compile [--filter speed] ART pre-compile
-  alfi appops  [--preset social] background AppOps limits
-  alfi ui      [--scale 0.5] animation scale and cache trim
-  alfi audit                 security and malware audit
-  alfi shizuku               export on-device rish scripts
-  alfi rescue  [--list-disabled] emergency recovery
-  alfi restore [--manifest latest] rollback
-  alfi vault                 per-device audit history
-  alfi update                refresh the community debloat catalog
 
-  alfi config                show saved defaults
-  alfi config set KEY VALUE  device | mode | color | ascii | user
-  alfi config path           where defaults are stored
+HELP = None  # built by render_help(); kept so older imports do not break
 
-Every command passes its remaining flags straight to the underlying script, so
-`alfi diagnose --json`, `alfi modes --dry-run` and so on all work.
-"""
 
 
 def status(argv):
@@ -126,7 +111,11 @@ def config_command(argv):
     from ui import ui as get_ui
 
     u = get_ui()
-    if not argv:
+    if not argv or argv[0] in ("-h", "--help"):
+        if argv:
+            entry = __import__("helpdata").by_name("config")
+            u.print(u.box(__import__("helpdata").detail_lines(entry, u.width - 4), title="CONFIG"))
+            return 0
         data = config.load()
         rows = ["%s = %r" % (k, data[k]) for k in config.VALID_KEYS]
         u.print(u.box(rows, title="ALFI DEFAULTS: " + config.config_path()))
@@ -178,6 +167,29 @@ def dispatch(module_name, argv, cfg):
         sys.argv = saved
 
 
+def help_command(argv):
+    """`alfi help` (grouped list) or `alfi help <command>` (full detail)."""
+    import helpdata
+    from ui import ui as get_ui
+
+    if not argv or argv[0] in ("-h", "--help"):
+        print(render_help())
+        return 0
+
+    name = argv[0].lower()
+    entry = helpdata.by_name(name)
+    if entry is None:
+        print("alfi: no help for '%s'" % name, file=sys.stderr)
+        close = [c["name"] for c in helpdata.COMMANDS if c["name"].startswith(name[:3])]
+        if close:
+            print("did you mean: " + ", ".join(close[:5]), file=sys.stderr)
+        return 2
+
+    ui = get_ui()
+    ui.print(ui.box(helpdata.detail_lines(entry, ui.width - 4), title=name.upper()))
+    return 0
+
+
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
     cfg = config.load()
@@ -187,9 +199,11 @@ def main(argv=None):
         return dispatch("wizard", [], cfg)
 
     command, rest = argv[0], argv[1:]
-    if command in ("-h", "--help", "help"):
-        print(HELP)
+    if command in ("-h", "--help"):
+        print(render_help())
         return 0
+    if command == "help":
+        return help_command(rest)
     if command in ("-V", "--version"):
         try:
             from __init__ import __version__

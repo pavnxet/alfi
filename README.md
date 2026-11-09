@@ -115,6 +115,21 @@ alfi restore --manifest latest
 Flags pass straight through to the underlying engine, so `--dry-run`, `--json`,
 `--yes`, `--user` and `--device` behave the same everywhere.
 
+### Help that teaches
+
+```bash
+alfi help              # every command, grouped by purpose
+alfi help probe        # what one command reads or changes, and an example
+```
+
+Inside the dashboard press **H** for the same reference, then type a command
+name to see its detail. Both surfaces render from one table
+(`scripts/helpdata.py`), and a test fails if a script exists without an entry —
+so the help cannot drift from the code.
+
+Commands that can change the phone are marked `*` in the list. Pair them with
+`--dry-run` first; every mutating command supports it.
+
 ### Measure what the phone is actually waiting on
 
 ```bash

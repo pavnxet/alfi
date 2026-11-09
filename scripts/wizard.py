@@ -51,8 +51,9 @@ except ImportError:
     except ImportError:
         __version__ = "1.2.0"
 
+from ui import prompts
 from ui import ui as _ui_factory
-from ui.widgets import gauge, gradient
+from ui.widgets import gauge, gradient, pad
 
 from connect import run_adb, get_connected_devices, get_device_info
 from device_tracker import get_device_fingerprint
@@ -115,6 +116,26 @@ def pause(prompt: str = "Press Enter to return to ALFi dashboard..."):
         pass
 
 ACTIONS_MAP = {
+    "probe": {
+        "title": "Probe Stall Time, Thermal and Memory Truth (PSI)",
+        "script": "probe.py",
+        "args": []
+    },
+    "attrib": {
+        "title": "Attribute the Stalls (runaway processes, dexopt, wakeups)",
+        "script": "attrib.py",
+        "args": []
+    },
+    "verify": {
+        "title": "Verify the Debloat Survived a Reboot",
+        "script": "verify.py",
+        "args": []
+    },
+    "watch": {
+        "title": "Live Monitor (CPU, memory, swap, battery)",
+        "script": "monitor.py",
+        "args": ["--count", "0"]
+    },
     "modes": {
         "title": "Multi-Tier Optimization (Low / Medium / High / Ultra)",
         "script": "modes.py",
@@ -195,7 +216,11 @@ MENU_ORDER = [
     ("10", "rescue"),
     ("11", "restore"),
     ("12", "vault"),
-    ("13", "update_db")
+    ("13", "update_db"),
+    ("14", "probe"),
+    ("15", "attrib"),
+    ("16", "verify"),
+    ("17", "watch")
 ]
 
 def clear_screen():
@@ -407,6 +432,37 @@ def print_stats_strip(active_serial: Optional[str] = None):
     u.print(u.box(cells, title="LIVE"))
 
 
+def print_help_screen():
+    """Grouped command reference, generated from the same table as `alfi help`."""
+    import helpdata
+
+    u = get_ui()
+    t = u.theme
+    rows = []
+    for group, entries in helpdata.grouped():
+        rows.append(t.paint(group.upper(), "title"))
+        for entry in entries:
+            rows.append("  " + t.paint(pad(entry["name"], 9), "ok") + " "
+                        + entry["summary"]
+                        + (t.paint("  *", "warn") if entry["mutates"] else ""))
+        rows.append("")
+    rows.append(t.paint("* changes the device - use --dry-run first", "muted"))
+    u.print(u.box(rows, title="HELP - WHAT EACH COMMAND DOES"))
+
+
+def print_command_help(name):
+    """Full detail for one command, or a nudge if the name is unknown."""
+    import helpdata
+
+    u = get_ui()
+    entry = helpdata.by_name(name.strip().lower())
+    if entry is None:
+        u.print(u.theme.paint("no command called '%s' - see the list above" % name, "warn"))
+        return False
+    u.print(u.box(helpdata.detail_lines(entry, u.width - 4), title=entry["name"].upper()))
+    return True
+
+
 def print_menu(total_devices: int = 0):
     """Render the dashboard decks. Width is adaptive; rows never overflow the box."""
     u = get_ui()
@@ -445,13 +501,20 @@ def print_menu(total_devices: int = 0):
         ("13", "\U0001F310", "Update Community Debloat Catalog (UAD-ng)"),
     ])
 
+    deck("MEASURE & VERIFY", [
+        ("14", "\U0001F4CA", "Probe stall time (PSI), thermal status, memory truth"),
+        ("15", "\U0001F50E", "Attribute the stalls: processes, dexopt, wakeups"),
+        ("16", "\u2705", "Verify the debloat survived a reboot"),
+        ("17", "\U0001F4C8", "Live monitor: CPU, memory, swap, battery"),
+    ])
+
     sys_items = [("D", "\U0001F4F1", "Device Manager & Switch Target" + dev_tag)]
     if find_scrcpy_binary():
         sys_items.append(("S", "\U0001F5A5", "Launch Screen Mirroring (scrcpy)"))
     sys_items.append(("0", "\U0001F6AA", "Exit Dashboard"))
     deck("SYSTEM CONTROL", sys_items)
 
-    u.print(t.paint(" " + u.glyph["arrow"] + " enter a number, or D devices / S mirror / 0 exit", "muted"))
+    u.print(t.paint(" " + u.glyph["arrow"] + " number to run   H help   D devices   S mirror   0 exit", "muted"))
 
 
 def prompt_device_selection(
@@ -732,6 +795,16 @@ def main():
         if choice in ["0", "exit", "quit", "q"]:
             print(f"\n{C_GREEN}⚡ Thanks for using ALFi! Goodbye! ⚡{C_RESET}\n")
             break
+
+        if choice.upper() in ("H", "?", "HELP"):
+            clear_screen()
+            print_banner()
+            print_help_screen()
+            wanted = prompts.read_line("command name for full detail (enter to go back): ")
+            if wanted:
+                print_command_help(wanted)
+                pause()
+            continue
 
         if choice.upper() == "D":
             active_serial, device_info = prompt_device_selection(current_serial=active_serial)
