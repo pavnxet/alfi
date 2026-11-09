@@ -52,7 +52,7 @@ except ImportError:
         __version__ = "1.2.0"
 
 from ui import ui as _ui_factory
-from ui.widgets import gauge
+from ui.widgets import gauge, gradient
 
 from connect import run_adb, get_connected_devices, get_device_info
 from device_tracker import get_device_fingerprint
@@ -325,8 +325,8 @@ def print_banner():
     ]
     for line in art:
         u.print(t.paint(line, "ok"))
-    u.print("  " + t.paint("A L F i", "title") + t.paint("  -  A N D R O I D   L A G   F I X E R  ", "muted")
-            + t.paint("[v%s]" % __version__, "warn"))
+    wordmark = gradient("A L F i  -  A N D R O I D   L A G   F I X E R", plain=(u.caps.color_depth != "truecolor"))
+    u.print("  " + wordmark + t.paint("  [v%s]" % __version__, "warn"))
 
 
 def print_device_card(
