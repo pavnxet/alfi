@@ -78,7 +78,7 @@ ACTIONS_MAP = {
     "bench": {
         "title": "Frame Pacing Benchmark (Jank Ratio & 1% Low FPS)",
         "script": "bench.py",
-        "args": ["--app", "com.android.settings", "--duration", "8"]
+        "args": ["--app", "com.android.settings", "--duration", "8", "--scroll"]
     },
     "power": {
         "title": "BatteryStats & Wakelock Reduction Audit (Before vs After)",

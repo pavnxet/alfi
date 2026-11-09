@@ -187,7 +187,18 @@ def run_jank_benchmark(
     refresh_rate = get_display_refresh_rate(target_serial)
     res = calculate_jank_metrics(out, min_frames=10, refresh_rate_hz=refresh_rate)
     if "error" in res and res.get("total_frames", 0) < 10:
-        return res
+        # Stationary screen fallback: trigger automated touch scroll to collect real frame data
+        print("    ℹ️ Static screen detected; performing automated hardware scroll passes...")
+        for _ in range(3):
+            run_adb(prefix + ["shell", "input swipe 500 1400 500 400 350"])
+            time.sleep(0.8)
+            run_adb(prefix + ["shell", "input swipe 500 400 500 1400 350"])
+            time.sleep(0.8)
+        ok2, out2 = run_adb(prefix + ["shell", f"dumpsys gfxinfo {pkg} framestats"], timeout=10)
+        if ok2 and out2:
+            res = calculate_jank_metrics(out2, min_frames=10, refresh_rate_hz=refresh_rate)
+        if "error" in res and res.get("total_frames", 0) < 10:
+            return res
 
     res["app"] = pkg
     res["timestamp"] = time.strftime("%Y-%m-%d %H:%M:%S")
