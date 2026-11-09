@@ -20,6 +20,9 @@ from wizard import (
     find_scrcpy_binary,
     launch_scrcpy,
     prompt_mode_selection,
+    prompt_device_selection,
+    print_device_card,
+    print_menu,
     SCRIPTS_DIR
 )
 
@@ -89,7 +92,7 @@ class TestWizard(unittest.TestCase):
         """Selecting [1] routes to Low mode without safety gate."""
         ok, out = prompt_mode_selection(dry_run=True)
         self.assertTrue(ok)
-        mock_run.assert_called_once_with("modes", dry_run=True, extra_args=["--mode", "low"])
+        mock_run.assert_called_once_with("modes", dry_run=True, extra_args=["--mode", "low"], serial=None)
 
     @patch("builtins.input", side_effect=["4", "NOPE"])
     def test_prompt_mode_selection_ultra_aborted(self, mock_input):
@@ -107,7 +110,8 @@ class TestWizard(unittest.TestCase):
         mock_run.assert_called_once_with(
             "modes",
             dry_run=True,
-            extra_args=["--mode", "ultra", "--force-ultra"]
+            extra_args=["--mode", "ultra", "--force-ultra"],
+            serial=None
         )
 
     @patch("wizard.subprocess.run")
@@ -129,6 +133,55 @@ class TestWizard(unittest.TestCase):
         ok, out = run_wizard_action("modes")
         self.assertFalse(ok)
         self.assertIn("EXECUTION FAILED", out)
+
+    @patch("wizard.get_device_info", return_value={"brand": "Google", "model": "Pixel 7", "android_version": "14", "sdk_level": "34"})
+    @patch("wizard.get_connected_devices", return_value=[
+        {"serial": "USB_DEV_1", "status": "device"},
+        {"serial": "192.168.1.55:5555", "status": "device"}
+    ])
+    @patch("builtins.input", side_effect=["2"])
+    def test_prompt_device_selection_switch(self, mock_input, mock_get_devs, mock_info):
+        """Test switching active device from phone 1 to phone 2."""
+        chosen_serial, info = prompt_device_selection(current_serial="USB_DEV_1")
+        self.assertEqual(chosen_serial, "192.168.1.55:5555")
+        self.assertEqual(os.environ.get("ANDROID_SERIAL"), "192.168.1.55:5555")
+        self.assertEqual(info.get("model"), "Pixel 7")
+
+    @patch("wizard.get_connected_devices", return_value=[{"serial": "DEV_1", "status": "device"}])
+    @patch("builtins.input", side_effect=["0"])
+    def test_prompt_device_selection_return_zero(self, mock_input, mock_get_devs):
+        """Entering '0' exits selector and preserves current serial."""
+        chosen_serial, _ = prompt_device_selection(current_serial="DEV_1")
+        self.assertEqual(chosen_serial, "DEV_1")
+
+    @patch("wizard.get_connected_devices", return_value=[
+        {"serial": "UNAUTH_DEV", "status": "unauthorized"}
+    ])
+    @patch("builtins.input", side_effect=["1", "", "0"])
+    def test_prompt_device_selection_unauthorized_blocked(self, mock_input, mock_get_devs):
+        """Selecting an unauthorized device warns and blocks target switch."""
+        chosen_serial, _ = prompt_device_selection(current_serial=None)
+        self.assertIsNone(chosen_serial)
+
+    def test_print_device_card_render_modes(self):
+        """Verify device card renders correctly across different device states."""
+        # Active device
+        info = {"brand": "Samsung", "model": "S23", "android_version": "14", "sdk_level": "34", "security_patch": "2024-05-01"}
+        print_device_card(info, total_devices=1, active_serial="R5CT123456")
+        
+        # Multiple devices
+        print_device_card(info, total_devices=2, active_serial="R5CT123456")
+        
+        # Unauthorized devices only
+        print_device_card(None, total_devices=1, active_serial=None)
+        
+        # Zero devices
+        print_device_card(None, total_devices=0, active_serial=None)
+
+    def test_print_menu_render(self):
+        """Verify menu renders correctly with device switch options."""
+        print_menu(total_devices=1)
+        print_menu(total_devices=3)
 
 if __name__ == "__main__":
     unittest.main()

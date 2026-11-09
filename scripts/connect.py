@@ -43,11 +43,19 @@ def find_adb():
     return None
 
 def run_adb(args, timeout=10):
-    """Safely execute an adb command with strict timeout."""
+    """Safely execute an adb command with strict timeout and automatic target serial routing."""
     adb = find_adb()
     if not adb:
         return False, "ADB binary not found on this machine."
-    cmd = [adb] + args
+
+    final_args = list(args)
+    target_serial = os.environ.get("ANDROID_SERIAL")
+    if target_serial and "-s" not in final_args and len(final_args) > 0:
+        first_cmd = final_args[0]
+        if first_cmd not in ["devices", "connect", "pair", "kill-server", "start-server", "version"]:
+            final_args = ["-s", target_serial] + final_args
+
+    cmd = [adb] + final_args
     try:
         res = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, encoding="utf-8", errors="replace")
         return res.returncode == 0, res.stdout.strip() if res.returncode == 0 else res.stderr.strip()

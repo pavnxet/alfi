@@ -191,7 +191,8 @@ def launch_scrcpy(serial: Optional[str] = None) -> Tuple[bool, str]:
 def run_wizard_action(
     action_key: str,
     dry_run: bool = False,
-    extra_args: Optional[List[str]] = None
+    extra_args: Optional[List[str]] = None,
+    serial: Optional[str] = None
 ) -> Tuple[bool, str]:
     """Execute a wizard action script as a subprocess."""
     if action_key not in ACTIONS_MAP:
@@ -205,6 +206,10 @@ def run_wizard_action(
     if extra_args:
         cmd.extend(extra_args)
 
+    env = dict(os.environ)
+    if serial:
+        env["ANDROID_SERIAL"] = serial
+
     try:
         proc = subprocess.run(
             cmd,
@@ -212,7 +217,8 @@ def run_wizard_action(
             stderr=subprocess.STDOUT,
             text=True,
             encoding="utf-8",
-            errors="replace"
+            errors="replace",
+            env=env
         )
         if proc.returncode != 0:
             err_box = f"\n{C_RED}╭{'─' * 72}╮{C_RESET}\n"
@@ -240,36 +246,54 @@ def print_banner():
 """
     print(banner)
 
-def print_device_card(device_info: Optional[Dict[str, Any]] = None):
+def print_device_card(
+    device_info: Optional[Dict[str, Any]] = None,
+    total_devices: int = 0,
+    active_serial: Optional[str] = None
+):
     """Render a modern rounded status card for connected hardware."""
     width = 74
     scrcpy_bin = find_scrcpy_binary()
     mirror_label = f"{C_GREEN}READY{C_RESET}" if scrcpy_bin else f"{C_GRAY}NOT FOUND{C_RESET}"
 
     print(f"{C_BORDER}╭{'─' * (width - 2)}╮{C_RESET}")
-    if device_info:
+    if device_info and active_serial:
         brand = device_info.get("brand", "Unknown").upper()
         model = device_info.get("model", "Device")
         android = device_info.get("android_version", "?")
         sdk = device_info.get("sdk_level", "?")
         patch = device_info.get("security_patch", "N/A")
+        is_wireless = ":" in active_serial
+        conn_label = "WIRELESS" if is_wireless else "USB"
 
-        line1 = f"  {C_GREEN}●{C_RESET} {C_WHITE}HARDWARE{C_RESET}  : {brand} {model}"
-        line2 = f"  {C_CYAN}●{C_RESET} {C_WHITE}PLATFORM{C_RESET}  : Android {android} (SDK {sdk})   {C_GRAY}● Patch: {patch}{C_RESET}"
-        line3 = f"  {C_GREEN}●{C_RESET} {C_WHITE}STATUS{C_RESET}    : ONLINE (ADB Authorized)   {C_GRAY}● Mirror: {mirror_label}{C_RESET}"
+        line1 = f"  {C_GREEN}●{C_RESET} {C_WHITE}ACTIVE PHONE{C_RESET}  : {brand} {model} ({conn_label})"
+        line2 = f"  {C_CYAN}●{C_RESET} {C_WHITE}PLATFORM{C_RESET}      : Android {android} (SDK {sdk})   {C_GRAY}● Patch: {patch}{C_RESET}"
+        
+        if total_devices > 1:
+            line3 = f"  {C_YELLOW}●{C_RESET} {C_WHITE}TARGET STATUS{C_RESET} : ONLINE ({total_devices} attached)     {C_CYAN}● Switch: [D]{C_RESET}"
+        else:
+            line3 = f"  {C_GREEN}●{C_RESET} {C_WHITE}STATUS{C_RESET}        : ONLINE (ADB Authorized)   {C_GRAY}● Mirror: {mirror_label}{C_RESET}"
+
         print(f"{C_BORDER}│{C_RESET}{line1:<95}{C_BORDER}│{C_RESET}")
         print(f"{C_BORDER}│{C_RESET}{line2:<105}{C_BORDER}│{C_RESET}")
         print(f"{C_BORDER}│{C_RESET}{line3:<105}{C_BORDER}│{C_RESET}")
+    elif total_devices > 0:
+        line1 = f"  {C_YELLOW}⚠️  HARDWARE{C_RESET}     : {total_devices} DEVICE(S) DETECTED (UNAUTHORIZED)"
+        line2 = f"  {C_WHITE}💡 ACTION NEEDED{C_RESET} : Unlock phone screen and tap 'Always allow from this computer'"
+        line3 = f"  {C_GRAY}● STATUS{C_RESET}        : WAITING FOR RSA KEY       {C_CYAN}● Manage: [D]{C_RESET}"
+        print(f"{C_BORDER}│{C_RESET}{line1:<95}{C_BORDER}│{C_RESET}")
+        print(f"{C_BORDER}│{C_RESET}{line2:<95}{C_BORDER}│{C_RESET}")
+        print(f"{C_BORDER}│{C_RESET}{line3:<105}{C_BORDER}│{C_RESET}")
     else:
-        line1 = f"  {C_YELLOW}○{C_RESET} {C_WHITE}HARDWARE{C_RESET}  : NO PHYSICAL DEVICE CONNECTED (Simulator / Headless)"
-        line2 = f"  {C_CYAN}💡 TIP{C_RESET}       : Plug in USB cable or connect via Wireless Debugging"
-        line3 = f"  {C_GRAY}●{C_RESET} {C_WHITE}STATUS{C_RESET}    : STANDBY                   {C_GRAY}● Mirror: {mirror_label}{C_RESET}"
+        line1 = f"  {C_YELLOW}○{C_RESET} {C_WHITE}HARDWARE{C_RESET}      : NO PHYSICAL DEVICE CONNECTED (Simulator / Headless)"
+        line2 = f"  {C_CYAN}💡 TIP{C_RESET}           : Plug in USB cable or connect via Wireless Debugging [D]"
+        line3 = f"  {C_GRAY}●{C_RESET} {C_WHITE}STATUS{C_RESET}        : STANDBY                   {C_GRAY}● Mirror: {mirror_label}{C_RESET}"
         print(f"{C_BORDER}│{C_RESET}{line1:<84}{C_BORDER}│{C_RESET}")
         print(f"{C_BORDER}│{C_RESET}{line2:<84}{C_BORDER}│{C_RESET}")
         print(f"{C_BORDER}│{C_RESET}{line3:<105}{C_BORDER}│{C_RESET}")
     print(f"{C_BORDER}╰{'─' * (width - 2)}╯{C_RESET}")
 
-def print_menu():
+def print_menu(total_devices: int = 0):
     """Display categorized command decks with rounded box formatting."""
     width = 74
 
@@ -313,13 +337,135 @@ def print_menu():
     ])
 
     # Deck 5: System Control
-    scrcpy_items = []
+    dev_tag = f" ({total_devices} Connected)" if total_devices > 1 else ""
+    sys_items = [
+        (" D", "📱", f"Device Manager & Switch Target Phone{dev_tag}")
+    ]
     if find_scrcpy_binary():
-        scrcpy_items.append((" S", "📱", "Launch Real-Time Screen Mirroring (scrcpy)"))
-    scrcpy_items.append((" 0", "🚪", "Exit Dashboard"))
-    print_deck("⚙️ SYSTEM CONTROL", scrcpy_items)
+        sys_items.append((" S", "🖥️ ", "Launch Real-Time Screen Mirroring (scrcpy)"))
+    sys_items.append((" 0", "🚪", "Exit Dashboard"))
+    print_deck("⚙️ SYSTEM CONTROL", sys_items)
 
-def prompt_mode_selection(dry_run: bool = False) -> Tuple[bool, str]:
+def prompt_device_selection(
+    current_serial: Optional[str] = None
+) -> Tuple[Optional[str], Optional[Dict[str, Any]]]:
+    """Interactive Device Manager and Target Switcher for ALFi."""
+    import time
+    while True:
+        clear_screen()
+        print_banner()
+        width = 74
+
+        print(f"{C_BORDER}╭{'─' * (width - 2)}╮{C_RESET}")
+        title = f"{C_YELLOW}⚡{C_RESET} {C_WHITE}ALFi DEVICE MANAGER & TARGET SELECTOR{C_RESET} {C_YELLOW}⚡{C_RESET}"
+        print(f"{C_BORDER}│{C_RESET}{title:^90}{C_BORDER}│{C_RESET}")
+        print(f"{C_BORDER}╰{'─' * (width - 2)}╯{C_RESET}\n")
+
+        devices = get_connected_devices()
+
+        if not devices:
+            print(f"  {C_YELLOW}○ NO PHYSICAL ANDROID DEVICES CURRENTLY DETECTED BY ADB{C_RESET}\n")
+            print(f"  {C_WHITE}💡 Quick Connection Checklist:{C_RESET}")
+            print(f"     1. {C_GRAY}Settings -> About Phone -> Tap 'Build Number' 7 times (Developer Options).{C_RESET}")
+            print(f"     2. {C_GRAY}Settings -> System / Developer Options -> Toggle 'USB Debugging' ON.{C_RESET}")
+            print(f"     3. {C_GRAY}Plug phone into PC via USB cable (or enable Wireless Debugging).{C_RESET}")
+            print(f"     4. {C_GRAY}Unlock phone screen and check 'Always allow from this computer'.{C_RESET}\n")
+        else:
+            print(f"  {C_WHITE}Detected {len(devices)} device(s) attached via ADB:{C_RESET}\n")
+            for idx, dev in enumerate(devices, 1):
+                s = dev["serial"]
+                status = dev["status"]
+                is_wireless = (":" in s)
+                conn_type = "Wireless Debugging" if is_wireless else "USB Cable"
+
+                if status == "device":
+                    info = get_device_info(s)
+                    brand = info.get("brand", "Android").upper()
+                    model = info.get("model", "Device")
+                    os_ver = f"Android {info.get('android_version', '?')} (SDK {info.get('sdk_level', '?')})"
+
+                    if s == current_serial:
+                        tag = f"{C_GREEN}🟢 ACTIVE TARGET{C_RESET}"
+                    else:
+                        tag = f"{C_WHITE}⚪ AVAILABLE    {C_RESET}"
+
+                    print(f"  {C_GREEN}[ {idx} ]{C_RESET} {tag} : {C_WHITE}{brand} {model}{C_RESET}")
+                    print(f"        {C_GRAY}• Serial   :{C_RESET} {s} ({conn_type})")
+                    print(f"        {C_GRAY}• Platform :{C_RESET} {os_ver}")
+                    print(f"        {C_GRAY}• Status   :{C_RESET} {C_GREEN}Authorized & Ready{C_RESET}\n")
+                elif status == "unauthorized":
+                    print(f"  {C_YELLOW}[ {idx} ] ⚠️  PENDING       : {C_WHITE}{s}{C_RESET} ({conn_type})")
+                    print(f"        {C_GRAY}• Status   :{C_RESET} {C_RED}UNAUTHORIZED (Check phone screen for RSA prompt!){C_RESET}\n")
+                else:
+                    print(f"  {C_GRAY}[ {idx} ] ❌ OFFLINE       : {s} ({status}){C_RESET}\n")
+
+        print(f"  {C_CYAN}[ R ] 🔄 Refresh Device Scan{C_RESET}")
+        print(f"  {C_CYAN}[ W ] 📶 Pair / Connect Wireless Phone (IP:Port + Pairing Code){C_RESET}")
+        print(f"  {C_GRAY}[ 0 ] 🔙 Return to Dashboard{C_RESET}")
+        print(f"{C_BORDER}{'─' * width}{C_RESET}")
+
+        try:
+            choice = input(f"\n{C_GREEN}👉 Select option or device number: {C_RESET}").strip()
+        except (KeyboardInterrupt, EOFError):
+            return current_serial, (get_device_info(current_serial) if current_serial else None)
+
+        if choice in ["0", "q", "exit", "back"]:
+            return current_serial, (get_device_info(current_serial) if current_serial else None)
+
+        if choice.upper() == "R":
+            continue
+
+        if choice.upper() == "W":
+            print(f"\n{C_BORDER}{'─' * width}{C_RESET}")
+            print(f"  {C_WHITE}📶 WIRELESS DEBUGGING SETUP (Android 11+){C_RESET}")
+            print(f"  {C_GRAY}Go to Settings -> Developer Options -> Wireless Debugging on your phone.{C_RESET}")
+            print(f"{C_BORDER}{'─' * width}{C_RESET}")
+            try:
+                ip_port = input(f"{C_GREEN}👉 Enter Phone IP & Port (e.g. 192.168.1.50:39845): {C_RESET}").strip()
+                if not ip_port:
+                    continue
+                pair_code = input(f"{C_YELLOW}👉 Enter 6-digit Pairing Code (or press Enter if already paired): {C_RESET}").strip()
+                if pair_code:
+                    pair_port = input(f"{C_GREEN}👉 Enter Pairing Port (shown under 'Pair device with code'): {C_RESET}").strip()
+                    pair_target = f"{ip_port.split(':')[0]}:{pair_port}" if pair_port else ip_port
+                    print(f"[*] Pairing with {pair_target} using code {pair_code}...")
+                    run_adb(["pair", pair_target, pair_code])
+                print(f"[*] Connecting to {ip_port}...")
+                ok, out = run_adb(["connect", ip_port])
+                print(f"[*] Result: {out}")
+                input(f"\n{C_GRAY}Press Enter to refresh devices...{C_RESET}")
+                continue
+            except (KeyboardInterrupt, EOFError):
+                continue
+
+        # Try selecting device by index
+        try:
+            dev_idx = int(choice) - 1
+            if 0 <= dev_idx < len(devices):
+                target_dev = devices[dev_idx]
+                if target_dev["status"] != "device":
+                    print(f"\n{C_RED}⚠️ Cannot select this device: Status is '{target_dev['status']}'.{C_RESET}")
+                    if target_dev["status"] == "unauthorized":
+                        print("👉 Please unlock your phone and tap 'Allow USB debugging' on the popup first.")
+                    input(f"\n{C_GRAY}Press Enter to continue...{C_RESET}")
+                    continue
+
+                chosen_serial = target_dev["serial"]
+                os.environ["ANDROID_SERIAL"] = chosen_serial
+                info = get_device_info(chosen_serial)
+                brand = info.get("brand", "Android").upper()
+                model = info.get("model", "Device")
+                print(f"\n{C_GREEN}✅ Active target switched to: {brand} {model} ({chosen_serial}){C_RESET}")
+                time.sleep(1)
+                return chosen_serial, info
+            else:
+                print(f"\n{C_RED}⚠️ Invalid device number.{C_RESET}")
+                input(f"{C_GRAY}Press Enter to try again...{C_RESET}")
+        except ValueError:
+            print(f"\n{C_RED}⚠️ Invalid option. Enter device number, R, W, or 0.{C_RESET}")
+            input(f"{C_GRAY}Press Enter to try again...{C_RESET}")
+
+def prompt_mode_selection(dry_run: bool = False, serial: Optional[str] = None) -> Tuple[bool, str]:
     """Display modern ALFi 4-Tier Visual Selection Deck."""
     clear_screen()
     print_banner()
@@ -384,12 +530,13 @@ def prompt_mode_selection(dry_run: bool = False) -> Tuple[bool, str]:
             return False, "Safety Gate: 'I UNDERSTAND' was not entered. Ultra mode cancelled."
         extra_args.append("--force-ultra")
 
-    return run_wizard_action("modes", dry_run=dry_run, extra_args=extra_args)
+    return run_wizard_action("modes", dry_run=dry_run, extra_args=extra_args, serial=serial)
 
 def main():
     parser = argparse.ArgumentParser(description="ALFi - Android Lag Fixer Control Wizard")
     parser.add_argument("--action", choices=list(ACTIONS_MAP.keys()), help="Execute a specific action non-interactively")
     parser.add_argument("--mode", choices=["low", "medium", "high", "ultra"], help="Target mode when running 'modes' action")
+    parser.add_argument("--serial", "-s", help="Target specific device serial or IP:port")
     parser.add_argument("--dry-run", action="store_true", help="Simulate action without executing live ADB mutations")
     parser.add_argument("--json", action="store_true", help="Output machine-readable JSON status")
     args = parser.parse_args()
@@ -397,8 +544,10 @@ def main():
     # Detect device
     devices = get_connected_devices()
     auth = [d for d in devices if d["status"] == "device"]
-    serial = auth[0]["serial"] if auth else None
-    device_info = get_device_info(serial) if serial else None
+    active_serial = args.serial if args.serial else (auth[0]["serial"] if auth else None)
+    if active_serial:
+        os.environ["ANDROID_SERIAL"] = active_serial
+    device_info = get_device_info(active_serial) if active_serial else None
 
     # Non-interactive CLI action
     if args.action:
@@ -407,7 +556,7 @@ def main():
             extra_args = ["--mode", args.mode]
             if args.mode == "ultra":
                 extra_args.append("--force-ultra")
-        ok, output = run_wizard_action(args.action, dry_run=args.dry_run, extra_args=extra_args)
+        ok, output = run_wizard_action(args.action, dry_run=args.dry_run, extra_args=extra_args, serial=active_serial)
         if args.json:
             print(json.dumps({
                 "action": args.action,
@@ -421,10 +570,28 @@ def main():
 
     # Interactive Dashboard Loop
     while True:
+        # Dynamically refresh device inventory
+        devices = get_connected_devices()
+        auth = [d for d in devices if d["status"] == "device"]
+        auth_serials = [d["serial"] for d in auth]
+
+        # Auto-heal active serial if disconnected
+        if active_serial and active_serial not in auth_serials:
+            active_serial = auth[0]["serial"] if auth else None
+            device_info = get_device_info(active_serial) if active_serial else None
+            if active_serial:
+                os.environ["ANDROID_SERIAL"] = active_serial
+            elif "ANDROID_SERIAL" in os.environ:
+                del os.environ["ANDROID_SERIAL"]
+        elif not active_serial and auth:
+            active_serial = auth[0]["serial"]
+            os.environ["ANDROID_SERIAL"] = active_serial
+            device_info = get_device_info(active_serial)
+
         clear_screen()
         print_banner()
-        print_device_card(device_info)
-        print_menu()
+        print_device_card(device_info, total_devices=len(devices), active_serial=active_serial)
+        print_menu(total_devices=len(devices))
 
         try:
             choice = input(f"\n{C_GREEN}👉 Select an action [0-{len(MENU_ORDER)}]: {C_RESET}").strip()
@@ -436,8 +603,12 @@ def main():
             print(f"\n{C_GREEN}⚡ Thanks for using ALFi! Goodbye! ⚡{C_RESET}\n")
             break
 
+        if choice.upper() == "D":
+            active_serial, device_info = prompt_device_selection(current_serial=active_serial)
+            continue
+
         if choice.upper() == "S":
-            ok, msg = launch_scrcpy(serial=serial)
+            ok, msg = launch_scrcpy(serial=active_serial)
             print(f"\n[*] {msg}\n")
             input(f"{C_GRAY}Press Enter to return to dashboard...{C_RESET}")
             continue
@@ -449,12 +620,12 @@ def main():
                 break
 
         if not selected_key:
-            print(f"\n{C_RED}⚠️ Invalid choice. Please enter a number between 0 and {len(MENU_ORDER)}.{C_RESET}\n")
+            print(f"\n{C_RED}⚠️ Invalid choice. Please enter a valid action number [0-{len(MENU_ORDER)}], D, or S.{C_RESET}\n")
             input(f"{C_GRAY}Press Enter to continue...{C_RESET}")
             continue
 
         if selected_key == "modes":
-            ok, out = prompt_mode_selection(dry_run=args.dry_run)
+            ok, out = prompt_mode_selection(dry_run=args.dry_run, serial=active_serial)
             clear_screen()
             print_banner()
             print(f"\n{out}")
@@ -462,7 +633,7 @@ def main():
             clear_screen()
             print_banner()
             print(f"\n[*] Executing: {ACTIONS_MAP[selected_key]['title']}...\n")
-            ok, out = run_wizard_action(selected_key, dry_run=args.dry_run)
+            ok, out = run_wizard_action(selected_key, dry_run=args.dry_run, serial=active_serial)
             print(out)
 
         print(f"\n{C_BORDER}{'─' * 74}{C_RESET}")
