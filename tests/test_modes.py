@@ -267,5 +267,35 @@ class TestOptimizationModes(unittest.TestCase):
                 self.assertTrue(res["aborted"])
                 self.assertIn("cancelled by user", res["error"])
 
+    def test_operations_state_normalization(self):
+        """Ensure apply_package_state accepts 'disable', 'enable', 'uninstall' aliases."""
+        from operations import apply_package_state
+        # Dry-run with aliases
+        ok_d, msg_d = apply_package_state("com.test.app", want="disable", dry_run=True)
+        self.assertTrue(ok_d)
+        self.assertIn("disable-user", msg_d)
+
+        ok_e, msg_e = apply_package_state("com.test.app", want="enable", dry_run=True)
+        self.assertTrue(ok_e)
+        self.assertIn("enable --user", msg_e)
+
+    @patch("modes.compile_package", return_value=(True, "Success"))
+    @patch("modes.apply_package_state", return_value=(True, "Disabled"))
+    @patch("modes.set_appops_restriction", return_value=(True, "Restricted"))
+    @patch("modes.set_standby_bucket", return_value=(True, "Set bucket"))
+    @patch("modes.trim_system_cache")
+    @patch("modes.set_animation_scale")
+    def test_execute_mode_medium_live_dispatch(self, mock_scale, mock_trim, mock_bucket, mock_ops, mock_state, mock_compile):
+        """Simulate real hardware dispatch for Medium mode verifying no TypeError or unknown states."""
+        mock_installed = {"com.oplus.onetrace", "com.instagram.android"}
+        with patch("modes.get_installed_packages", return_value=mock_installed):
+            with patch("modes.get_device_info", return_value={"brand": "Realme", "model": "RMX3867", "android_version": "14", "sdk_level": "34"}):
+                res = execute_mode_optimization("medium", dry_run=False, auto_confirm=True)
+                self.assertTrue(res["success"])
+                self.assertIn("com.oplus.onetrace", res["packages_disabled"])
+                self.assertIn("com.instagram.android", res["art_compiled"])
+                mock_state.assert_called_once_with("com.oplus.onetrace", want="disabled", serial=None, dry_run=False)
+                mock_compile.assert_called_once_with("com.instagram.android", compile_filter="speed-profile", serial=None, dry_run=False)
+
 if __name__ == "__main__":
     unittest.main()

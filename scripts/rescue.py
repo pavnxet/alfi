@@ -170,7 +170,7 @@ def rescue_single_package(
 
     # 5. Reset ART cache
     if not dry_run:
-        run_adb(prefix + ["shell", f"cmd package compile --reset {pkg}"])
+        run_adb(prefix + ["shell", f"cmd package compile --reset {pkg}"], timeout=30)
         actions_taken.append("ART JIT compilation reset")
     else:
         actions_taken.append("[DRY-RUN] ART compilation reset")

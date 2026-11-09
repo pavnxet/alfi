@@ -45,12 +45,16 @@ def compile_package(
     pkg: str,
     compile_filter: str = "speed-profile",
     serial: Optional[str] = None,
-    dry_run: bool = False
+    dry_run: bool = False,
+    filter_type: Optional[str] = None
 ) -> Tuple[bool, str]:
     """
     Compile a package using ART AOT compiler.
     Returns (success: bool, message: str)
     """
+    if filter_type:
+        compile_filter = filter_type
+
     if not validate_package_name(pkg):
         return False, f"Invalid package name format: '{pkg}'"
     

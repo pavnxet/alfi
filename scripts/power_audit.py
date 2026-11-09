@@ -146,7 +146,7 @@ def reset_batterystats(serial: Optional[str] = None, dry_run: bool = False) -> T
 def capture_power_audit(serial: Optional[str] = None) -> Dict[str, Any]:
     """Capture and parse live dumpsys batterystats from connected device."""
     prefix = ["-s", serial] if serial else []
-    ok, out = run_adb(prefix + ["shell", "dumpsys batterystats"])
+    ok, out = run_adb(prefix + ["shell", "dumpsys batterystats"], timeout=45)
     if not ok or not out:
         return parse_batterystats("")
     return parse_batterystats(out)

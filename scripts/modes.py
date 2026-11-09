@@ -511,7 +511,9 @@ def execute_mode_optimization(
 
     # Fetch device context
     installed = get_installed_packages(serial=serial)
-    device_info = get_device_info(serial) if serial else {"brand": "Generic", "model": "Android"}
+    device_info = get_device_info(serial)
+    if not device_info or device_info.get("brand") in [None, "Unknown"]:
+        device_info = {"brand": "Generic", "model": "Android", "android_version": "14", "sdk_level": "34"}
     manufacturer = device_info.get("brand", "generic")
 
     # Formulate plan
@@ -571,7 +573,7 @@ def execute_mode_optimization(
                 results["packages_disabled"].append(pkg)
                 manifest_data["packages"][pkg] = {"previous_state": "enabled", "new_state": "disabled"}
             else:
-                ok, msg = apply_package_state(pkg, "disable", serial=serial, dry_run=False)
+                ok, msg = apply_package_state(pkg, want="disabled", serial=serial, dry_run=False)
                 if ok:
                     print(f"    ✅ Disabled: {pkg}")
                     results["packages_disabled"].append(pkg)
@@ -637,9 +639,12 @@ def execute_mode_optimization(
                     print(f"    [DRY-RUN] Would compile {p} with filter {cfg['art_filter']}")
                     results["art_compiled"].append(p)
                 else:
-                    ok, _ = compile_package(p, filter_type=cfg["art_filter"], serial=serial, dry_run=False)
+                    ok, msg = compile_package(p, compile_filter=cfg["art_filter"], serial=serial, dry_run=False)
                     if ok:
+                        print(f"    ✅ Compiled: {p}")
                         results["art_compiled"].append(p)
+                    else:
+                        print(f"    ℹ️ Compilation notice for {p}: {msg}")
 
     print(f"\n✅ Mode [{cfg['emoji']} {cfg['name']}] optimization complete!")
     return results

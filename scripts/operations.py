@@ -74,6 +74,12 @@ def apply_package_state(
 
     prefix = ["-s", serial] if serial else []
     want = want.lower().strip()
+    if want in ["disable", "disabled"]:
+        want = "disabled"
+    elif want in ["enable", "enabled"]:
+        want = "enabled"
+    elif want in ["uninstall", "uninstalled"]:
+        want = "uninstalled"
 
     # Android 17 (SDK 37+) compatibility check
     if want == "uninstalled" and sdk_level >= 37:

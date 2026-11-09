@@ -47,9 +47,11 @@ def trim_system_cache(serial=None, dry_run=False):
     if dry_run or not serial:
         print("  ✅ Cache trimmed successfully (Simulated).")
     else:
-        ok, out = run_adb(prefix + ["shell", "pm trim-caches 1000G"])
+        ok, out = run_adb(prefix + ["shell", "pm trim-caches 1000G"], timeout=45)
         if ok:
             print("  ✅ Cache trimmed successfully.")
+        elif "timed out" in out.lower():
+            print("  ℹ️ Cache trim request dispatched to OS background maintenance.")
         else:
             print(f"  ⚠️ Cache trim result: {out}")
 

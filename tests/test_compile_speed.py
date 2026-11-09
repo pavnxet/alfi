@@ -78,6 +78,17 @@ class TestCompileSpeed(unittest.TestCase):
         )
 
     @patch("compile_speed.run_adb")
+    def test_filter_type_keyword_alias(self, mock_run_adb):
+        """Passing filter_type as kwarg must map transparently to compile_filter."""
+        mock_run_adb.return_value = (True, "Success\n")
+        ok, msg = compile_package("com.instagram.android", filter_type="speed-profile", serial="mock_device")
+        self.assertTrue(ok)
+        mock_run_adb.assert_called_once_with(
+            ["-s", "mock_device", "shell", "cmd package compile -m speed-profile -f com.instagram.android"],
+            timeout=90
+        )
+
+    @patch("compile_speed.run_adb")
     def test_compilation_failure(self, mock_run_adb):
         """Simulate ADB compilation failure."""
         mock_run_adb.return_value = (False, "Failure [INSTALL_FAILED_INVALID_APK]")
