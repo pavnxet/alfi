@@ -90,6 +90,31 @@ alfi-modes --mode medium
 
 ---
 
+## Terminal UI
+
+ALFi renders its interface from a small standard-library layer in `scripts/ui/`, so the
+same screens work in a full-colour terminal, a plain pipe, and everything in between.
+
+| Environment | What you get |
+| --- | --- |
+| Interactive terminal | rounded boxes, colour, emoji icons, live progress bar |
+| `NO_COLOR=1` or `TERM=dumb` | same layout, no escape sequences |
+| Piped / redirected (`\| tee`, CI logs) | ASCII borders (`+--+`), no icons, one line per event |
+| Narrow terminal (< 60 columns) | compact banner, boxes clamped to the terminal width |
+| `ALFI_ASCII=1` | forces the ASCII renderer even on a capable terminal |
+
+Width is measured in **display columns**, not characters: ANSI escapes count as zero and
+emoji count as two, so borders stay aligned on every row.
+
+```bash
+alfi                     # dashboard
+alfi-modes --mode low    # pre-flight card -> confirm -> progress -> session summary
+NO_COLOR=1 alfi          # plain output
+```
+
+Nothing in `scripts/ui/` imports a third-party package, calls `adb`, or writes outside
+`ui.out()`.
+
 ## Why Do Android Phones Lag Over Time?
 
 Most Android speed-up advice falls into three bad categories: factory resets, third-party "cleaner" apps (which are frequently adware themselves), or rooting, which can trip Knox, Widevine L1 and banking-app security checks.
