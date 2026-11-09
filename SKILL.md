@@ -140,3 +140,15 @@ python scripts/rescue.py --guide samsung
 # Export standalone on-device Shizuku (rish) optimization & rollback shell scripts:
 python scripts/export_shizuku.py --profile all
 ```
+
+### Phase 11: Interactive Control Dashboard & Community Database Sync
+```bash
+# Launch unified interactive terminal dashboard:
+python scripts/wizard.py
+
+# Or run non-interactive CLI shortcut:
+python scripts/wizard.py --action debloat --dry-run
+
+# Sync upstream community package database from UAD-ng:
+python scripts/update_database.py
+```

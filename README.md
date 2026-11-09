@@ -113,6 +113,8 @@ android-lag-fixer/
 │   ├── appops_restrict.py                   # AppOps background execution limits & standby bucket manager
 │   ├── rescue.py                            # Emergency feature recovery & hardware safe mode rescue engine
 │   ├── export_shizuku.py                    # On-device Shizuku / rish shell & paired rollback exporter
+│   ├── update_database.py                   # Community UAD-ng debloat list merger & schema validator
+│   ├── wizard.py                            # Unified interactive terminal control dashboard
 │   ├── tweak_ui.py                          # 2x animation scaling & system cache trimmer
 │   └── device_tracker.py                    # Hardware serial fingerprinting & multi-device audit vault
 │
@@ -121,7 +123,9 @@ android-lag-fixer/
 │   ├── test_compile_speed.py                # Mocked tests for ART compilation & reset points
 │   ├── test_appops_restrict.py              # Mocked tests for AppOps limits & standby buckets
 │   ├── test_rescue.py                       # Mocked tests for emergency feature rescue & recovery
-│   └── test_export_shizuku.py               # Mocked tests for Shizuku & rollback shell exporter
+│   ├── test_export_shizuku.py               # Mocked tests for Shizuku & rollback shell exporter
+│   ├── test_update_database.py              # Mocked tests for community list parsing & database merging
+│   └── test_wizard.py                       # Mocked tests for terminal wizard & command formulation
 │
 └── references/
     ├── connection_guide.md                  # USB drivers, developer settings, wireless debugging
@@ -134,6 +138,13 @@ android-lag-fixer/
 ---
 
 ## 🛠️ Getting Started in 3 Steps
+
+### ⚡ Fast-Track: Interactive Control Dashboard (Phase 4)
+If you prefer an all-in-one interactive menu over typing individual command line flags, simply launch:
+```bash
+python scripts/wizard.py
+```
+*(Provides a guided numbered menu for diagnostics, frame pacing benchmarks, safe debloating, speed pre-compilation, AppOps limits, Shizuku export, and emergency rescue).*
 
 ### Prerequisites
 * **Python 3.9+** installed on your PC (Windows, macOS, or Linux).
@@ -279,6 +290,33 @@ python scripts/export_shizuku.py --profile samsung
 # 1. Start Shizuku via Wireless Debugging
 # 2. In Termux, run: rish apply_optimization_samsung_TIMESTAMP.sh
 # 3. 1-Click Rollback on phone: rish rollback_optimization_samsung_TIMESTAMP.sh
+```
+
+#### 8. Sync Community Package Database (Phase 4)
+Automatically import and merge thousands of community-maintained, peer-reviewed debloat package definitions from UAD-ng (Universal Android Debloater Next Generation):
+
+```bash
+# Sync from upstream repository:
+python scripts/update_database.py
+
+# Import from a local JSON file (offline mode):
+python scripts/update_database.py --file /path/to/uad_lists.json
+
+# 1-Click Rollback if an update ever needs reverting:
+python scripts/update_database.py --restore-backup package_database_backup_YYYYMMDD_HHMMSS.json
+```
+*(Every sync automatically validates package names against injection regex and creates a pre-flight backup snapshot in `backups/package_database_backup_*.json`).*
+
+#### 9. Unified Interactive Terminal Control Wizard (Phase 4)
+Run all tools, benchmarks, and recovery operations through a single interactive dashboard:
+
+```bash
+# Interactive menu:
+python scripts/wizard.py
+
+# Non-interactive CLI shortcut:
+python scripts/wizard.py --action debloat --dry-run
+python scripts/wizard.py --action rescue
 ```
 
 ---
