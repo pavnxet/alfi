@@ -21,10 +21,12 @@ if sys.stdout and hasattr(sys.stdout, "reconfigure"):
 if sys.stderr and hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
+SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
+if SCRIPTS_DIR not in sys.path:
+    sys.path.insert(0, SCRIPTS_DIR)
+
 from connect import run_adb, get_connected_devices, get_device_info
 from device_tracker import get_device_fingerprint
-
-SCRIPTS_DIR = os.path.dirname(__file__)
 
 ACTIONS_MAP = {
     "modes": {

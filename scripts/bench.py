@@ -8,6 +8,7 @@ and 1% Low FPS. Eliminates subjective marketing claims by providing empirical pr
 """
 
 import sys
+import os
 import time
 import json
 import argparse
@@ -17,6 +18,10 @@ if sys.stdout and hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 if sys.stderr and hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
+SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
+if SCRIPTS_DIR not in sys.path:
+    sys.path.insert(0, SCRIPTS_DIR)
 
 from connect import run_adb, get_connected_devices, get_device_info
 
