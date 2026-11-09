@@ -146,6 +146,17 @@ python scripts/wizard.py
 ```
 *(Provides a guided numbered menu for diagnostics, frame pacing benchmarks, safe debloating, speed pre-compilation, AppOps limits, Shizuku export, and emergency rescue).*
 
+### 📦 Optional: Install Globally via pipx / pip (Phase 5)
+You can install and run `android-lag-fixer` directly as a standalone system command:
+```bash
+pipx install git+https://github.com/pavnxet/android-lag-fixer.git
+
+# Run directly from anywhere in your terminal:
+lagfixer         # Launches the interactive control dashboard
+lagfixer-rescue  # Quick launcher for emergency rescue
+lagfixer-bench   # Quick launcher for frame pacing benchmarks
+```
+
 ### Prerequisites
 * **Python 3.9+** installed on your PC (Windows, macOS, or Linux).
 * **ADB (Android Debug Bridge)**:

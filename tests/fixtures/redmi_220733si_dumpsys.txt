@@ -1,0 +1,13 @@
+Load: 7.42 / 6.18 / 5.54
+CPU usage from 10123ms to 120ms ago:
+  42% 1120/system_server: 28% user + 14% kernel
+  38% 1845/kswapd0: 0% user + 38% kernel
+  14% 3901/com.facebook.katana: 10% user + 4% kernel
+  8.2% 4120/com.miui.analytics.go: 5.1% user + 3.1% kernel
+  6.5% 4512/com.miui.android.fashiongallery: 4.2% user + 2.3% kernel
+Total: 78% user + 22% kernel
+Total RAM: 1,894,400 kB (1850 MB)
+Free RAM: 225,280 kB (220 MB)
+Used RAM: 1,669,120 kB (1630 MB)
+Lost RAM: 82,120 kB (80 MB)
+ZRAM: 512,000 kB physical used for 1,024,000 kB in swap (1024 MB total swap)

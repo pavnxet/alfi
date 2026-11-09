@@ -1,0 +1,9 @@
+Load: 16.86 / 15.22 / 12.18
+CPU usage from 12052ms to 2045ms ago (2026-11-09 15:58:12.124 to 2026-11-09 15:58:22.131):
+  152% 1245/system_server: 88% user + 64% kernel / faults: 12401 minor
+  133% 4125/com.google.android.gms: 92% user + 41% kernel / faults: 4102 minor
+  9.4% 8912/com.aura.oobe.samsung: 6.2% user + 3.2% kernel / faults: 1240 minor
+  4.1% 3201/com.samsung.android.diagmonagent: 2.1% user + 2.0% kernel
+  2.3% 3512/com.sec.android.app.billing: 1.1% user + 1.2% kernel
+  1.1% 512/kswapd0: 0% user + 1.1% kernel
+Total: 92% user + 8% kernel + 0% iowait + 0% irq + 0% softirq

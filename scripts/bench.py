@@ -20,6 +20,68 @@ if sys.stderr and hasattr(sys.stderr, "reconfigure"):
 
 from connect import run_adb, get_connected_devices, get_device_info
 
+def calculate_jank_metrics(raw_framestats: str, min_frames: int = 1) -> Dict[str, Any]:
+    """
+    Parse CSV rows from dumpsys gfxinfo framestats and calculate latency percentiles.
+    """
+    frame_times_ms: List[float] = []
+    lines = (raw_framestats or "").splitlines()
+    in_framestats = False
+
+    for line in lines:
+        line_str = line.strip()
+        if line_str.startswith("---PROFILEDATA---"):
+            in_framestats = True
+            continue
+        if not in_framestats:
+            continue
+        if line_str.startswith("Flags"):
+            continue
+
+        parts = line_str.split(",")
+        if len(parts) >= 13:
+            flags = parts[0].strip()
+            # Flags == 0 indicates standard completed frame without window resize or skip
+            if flags != "0":
+                continue
+            try:
+                intended_vsync = int(parts[1])
+                # FrameCompleted is column 13; older Android has 14 columns, Android 12+ has 16 columns
+                frame_completed = int(parts[13]) if len(parts) >= 14 else int(parts[-1])
+                if frame_completed > intended_vsync and intended_vsync > 0:
+                    delta_ms = (frame_completed - intended_vsync) / 1_000_000.0
+                    if 0.5 < delta_ms < 500.0:  # Filter out system pause artifacts
+                        frame_times_ms.append(delta_ms)
+            except (ValueError, IndexError):
+                continue
+
+    n = len(frame_times_ms)
+    if n < min_frames:
+        return {
+            "error": "Insufficient frames collected. Please scroll or interact with the app during the benchmark.",
+            "total_frames": n
+        }
+
+    frame_times_ms.sort()
+    
+    # Jank threshold: 19.1ms (standard for 60Hz display + 15% allowance, or >11.5ms for 90Hz)
+    jank_frames = sum(1 for t in frame_times_ms if t > 19.1)
+    jank_pct = round((jank_frames / n) * 100.0, 2)
+    p50_ms = round(frame_times_ms[int(n * 0.50)], 2)
+    p90_ms = round(frame_times_ms[int(n * 0.90)], 2)
+    p99_ms = round(frame_times_ms[int(n * 0.99)], 2)
+    fps_1pct_low = round(1000.0 / p99_ms, 1) if p99_ms > 0 else 0.0
+
+    return {
+        "total_frames": n,
+        "jank_frames": jank_frames,
+        "jank_percentage": jank_pct,
+        "p50_latency_ms": p50_ms,
+        "p90_latency_ms": p90_ms,
+        "p99_latency_ms": p99_ms,
+        "fps_1pct_low": fps_1pct_low
+    }
+
 def run_jank_benchmark(
     target_serial: Optional[str] = None,
     pkg: str = "com.android.settings",
@@ -58,64 +120,14 @@ def run_jank_benchmark(
     if not ok or not out:
         return {"error": "Failed to retrieve gfxinfo framestats. Ensure app was running."}
 
-    # 5. Parse CSV frame rows
-    frame_times_ms: List[float] = []
-    lines = out.splitlines()
-    in_framestats = False
+    # 5. Calculate metrics
+    res = calculate_jank_metrics(out, min_frames=10)
+    if "error" in res and res.get("total_frames", 0) < 10:
+        return res
 
-    for line in lines:
-        line_str = line.strip()
-        if line_str.startswith("---PROFILEDATA---"):
-            in_framestats = True
-            continue
-        if not in_framestats:
-            continue
-        if line_str.startswith("Flags"):
-            continue
-
-        parts = line_str.split(",")
-        if len(parts) >= 13:
-            flags = parts[0].strip()
-            # Flags == 0 indicates standard completed frame without window resize or skip
-            if flags != "0":
-                continue
-            try:
-                intended_vsync = int(parts[1])
-                frame_completed = int(parts[-1])
-                if frame_completed > intended_vsync and intended_vsync > 0:
-                    delta_ms = (frame_completed - intended_vsync) / 1_000_000.0
-                    if 0.5 < delta_ms < 500.0:  # Filter out system pause artifacts
-                        frame_times_ms.append(delta_ms)
-            except (ValueError, IndexError):
-                continue
-
-    n = len(frame_times_ms)
-    if n < 10:
-        return {
-            "error": "Insufficient frames collected. Please scroll or interact with the app during the benchmark."
-        }
-
-    frame_times_ms.sort()
-    
-    # Jank threshold: 19.1ms (standard for 60Hz display + 15% allowance, or >11.5ms for 90Hz)
-    jank_frames = sum(1 for t in frame_times_ms if t > 19.1)
-    jank_pct = round((jank_frames / n) * 100.0, 2)
-    p50_ms = round(frame_times_ms[int(n * 0.50)], 2)
-    p90_ms = round(frame_times_ms[int(n * 0.90)], 2)
-    p99_ms = round(frame_times_ms[int(n * 0.99)], 2)
-    fps_1pct_low = round(1000.0 / p99_ms, 1) if p99_ms > 0 else 0.0
-
-    return {
-        "app": pkg,
-        "total_frames": n,
-        "jank_frames": jank_frames,
-        "jank_percentage": jank_pct,
-        "p50_latency_ms": p50_ms,
-        "p90_latency_ms": p90_ms,
-        "p99_latency_ms": p99_ms,
-        "fps_1pct_low": fps_1pct_low,
-        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
-    }
+    res["app"] = pkg
+    res["timestamp"] = time.strftime("%Y-%m-%d %H:%M:%S")
+    return res
 
 def print_benchmark_table(res: Dict[str, Any]):
     print("\n" + "="*60)

@@ -33,6 +33,17 @@ classifiers = [
 ]
 dependencies = []
 
+[project.scripts]
+lagfixer = "scripts.wizard:main"
+lagfixer-wizard = "scripts.wizard:main"
+lagfixer-rescue = "scripts.rescue:main"
+lagfixer-bench = "scripts.bench:main"
+lagfixer-shizuku = "scripts.export_shizuku:main"
+lagfixer-update = "scripts.update_database:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["scripts"]
+
 [project.urls]
 Homepage = "https://github.com/pavnxet/android-lag-fixer"
 Issues = "https://github.com/pavnxet/android-lag-fixer/issues"
