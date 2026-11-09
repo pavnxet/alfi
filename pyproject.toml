@@ -1,0 +1,38 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "android-lag-fixer"
+version = "1.0.0"
+description = "Safe, non-root Android lag fixer, performance optimizer & malware auditor over ADB"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.9"
+authors = [
+    { name = "pavnxet" }
+]
+keywords = [
+    "android",
+    "lag-fix",
+    "debloater",
+    "adb",
+    "performance",
+    "optimization",
+    "hyperos",
+    "miui",
+    "oneui",
+    "coloros"
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: System :: Hardware",
+    "Topic :: Utilities"
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/pavnxet/android-lag-fixer"
+Issues = "https://github.com/pavnxet/android-lag-fixer/issues"

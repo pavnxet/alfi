@@ -7,9 +7,18 @@ Developer Options, USB Debugging, and authorization popups, and extracts device 
 """
 
 import sys
+import os
+import re
 import subprocess
 import shutil
 import time
+
+PACKAGE_REGEX = re.compile(r"^[a-zA-Z0-9_]+(\.[a-zA-Z0-9_]+)+$")
+
+def validate_package_name(pkg: str) -> bool:
+    """Validate package name against standard Android naming convention to prevent shell injection."""
+    return bool(pkg and PACKAGE_REGEX.match(pkg.strip()))
+
 
 if sys.stdout and hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
