@@ -115,7 +115,7 @@ MODE_CONFIGS = {
         "name": "High",
         "emoji": "🟠",
         "label": "High (Aggressive Smoothness & Battery)",
-        "description": "Medium + non-critical vendor bloat (Bixby, AR Emoji, Joyose), standby bucket restricted, deep Doze, 0 GB zRAM.",
+        "description": "Medium + non-critical vendor bloat (Bixby, AR Emoji, Joyose), standby bucket restricted, deep Doze, Virtual RAM off guide.",
         "risk_level": "Moderate",
         "target_audience": "Power users, older devices, and budget hardware (2GB-4GB RAM) with heavy background lag.",
         "animation_scale": "0.5",
@@ -125,7 +125,7 @@ MODE_CONFIGS = {
         "appops_preset": "social",
         "standby_bucket": "restricted",
         "art_filter": "speed",
-        "zram": "0gb",
+        "zram": None,
         "requires_confirmation": False
     },
     "ultra": {
@@ -142,14 +142,26 @@ MODE_CONFIGS = {
         "appops_preset": "all_third_party",
         "standby_bucket": "restricted",
         "art_filter": "speed",
-        "zram": "0gb",
+        "zram": None,
         "requires_confirmation": True
     }
 }
 
+def get_database_path() -> str:
+    """Resolve location of package_database.json across source repository and wheel installations."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    candidates = [
+        os.path.join(here, "package_database.json"),
+        os.path.join(here, "..", "package_database.json")
+    ]
+    for c in candidates:
+        if os.path.exists(c):
+            return os.path.normpath(c)
+    return os.path.normpath(os.path.join(here, "..", "package_database.json"))
+
 def load_database() -> Dict[str, Any]:
     """Load package database with categories and dependency graphs."""
-    db_path = os.path.join(os.path.dirname(__file__), "..", "package_database.json")
+    db_path = get_database_path()
     if not os.path.exists(db_path):
         return {"categories": {}}
     try:
@@ -562,7 +574,7 @@ def main():
 
         print("  \033[1;38;2;255;152;0m[ 3 ] 🟠 HIGH MODE\033[0m ────── \033[1;38;2;255;255;255mAGGRESSIVE ACCELERATION (Budget / Sluggish Devices)\033[0m")
         print("        \033[38;2;120;144;156m• Scope   :\033[0m Medium + vendor bloat (Bixby, Joyose), App Standby RESTRICTED,")
-        print("                    Deep Doze allowlist cleanup, 0 GB zRAM / RAM Plus off")
+        print("                    Deep Doze allowlist cleanup, Virtual RAM off guidance")
         print("        \033[38;2;120;144;156m• Target  :\033[0m Power users, older devices, budget 2GB-4GB hardware with lag\n")
 
         print("  \033[1;38;2;255;82;82m[ 4 ] 🔴 ULTRA MODE\033[0m ───── \033[1;38;2;255;255;255mEXTREME STRIP-DOWN (High-Risk / Power Users)\033[0m")

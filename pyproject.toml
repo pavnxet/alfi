@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "alfi"
-version = "1.1.0"
+version = "1.2.0"
 description = "ALFi - Android Lag Fixer: Safe, non-root Android performance optimizer (Low/Medium/High/Ultra), debloater & malware auditor over ADB"
 readme = "README.md"
 license = "MIT"
@@ -57,6 +57,9 @@ lagfixer-update = "scripts.update_database:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["scripts"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"package_database.json" = "scripts/package_database.json"
 
 [project.urls]
 Homepage = "https://github.com/pavnxet/alfi"

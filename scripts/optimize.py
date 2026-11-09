@@ -25,9 +25,21 @@ from operations import apply_package_state
 
 UAD_LIST_URL = "https://raw.githubusercontent.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation/main/resources/assets/uad_lists.json"
 
+def get_database_path() -> str:
+    """Resolve location of package_database.json across source repository and wheel installations."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    candidates = [
+        os.path.join(here, "package_database.json"),
+        os.path.join(here, "..", "package_database.json")
+    ]
+    for c in candidates:
+        if os.path.exists(c):
+            return os.path.normpath(c)
+    return os.path.normpath(os.path.join(here, "..", "package_database.json"))
+
 def load_database() -> Dict[str, Any]:
     """Load package database."""
-    db_path = os.path.join(os.path.dirname(__file__), "..", "package_database.json")
+    db_path = get_database_path()
     if not os.path.exists(db_path):
         print("❌ package_database.json not found!")
         sys.exit(1)
@@ -36,7 +48,7 @@ def load_database() -> Dict[str, Any]:
 
 def update_database_from_upstream():
     """Fetch and merge upstream UAD-ng community debloat definitions."""
-    db_path = os.path.join(os.path.dirname(__file__), "..", "package_database.json")
+    db_path = get_database_path()
     print(f"[*] Fetching latest community package definitions from:\n    {UAD_LIST_URL}")
     try:
         req = urllib.request.Request(UAD_LIST_URL, headers={"User-Agent": "android-lag-fixer/1.0"})

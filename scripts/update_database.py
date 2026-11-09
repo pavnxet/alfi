@@ -32,7 +32,19 @@ UPSTREAM_UAD_URL = (
     "universal-android-debloater-next-generation/main/resources/assets/uad_lists.json"
 )
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "..", "package_database.json")
+def get_database_path() -> str:
+    """Resolve location of package_database.json across source repository and wheel installations."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    candidates = [
+        os.path.join(here, "package_database.json"),
+        os.path.join(here, "..", "package_database.json")
+    ]
+    for c in candidates:
+        if os.path.exists(c):
+            return os.path.normpath(c)
+    return os.path.normpath(os.path.join(here, "..", "package_database.json"))
+
+DB_PATH = get_database_path()
 
 def categorize_package(pkg: str) -> str:
     """Categorize an Android package name into an OEM or ecosystem group."""

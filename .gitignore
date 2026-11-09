@@ -5,6 +5,11 @@ __pycache__/
 *.log
 .DS_Store
 
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
 # Local backups & multi-device audit vault (private hardware serials & snapshots - never push)
 backups/
 devices/

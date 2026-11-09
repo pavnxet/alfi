@@ -156,19 +156,23 @@ def clear_screen():
         pass
 
 def find_scrcpy_binary() -> Optional[str]:
-    """Auto-detect scrcpy executable across system PATH and common installation paths."""
+    """Auto-detect scrcpy executable across system PATH and standard installation locations."""
     found = shutil.which("scrcpy")
     if found:
         return found
 
     candidates = [
-        r"E:\Download\scrcpy-release-v3.2\scrcpy-win64-v3.2\scrcpy.exe",
-        r"E:\Download\scrcpy-win64-v3.2\scrcpy.exe",
+        os.path.expandvars(r"%LOCALAPPDATA%\Programs\scrcpy\scrcpy.exe"),
+        r"C:\Program Files\scrcpy\scrcpy.exe",
         r"C:\scrcpy\scrcpy.exe",
-        r"C:\Tools\scrcpy\scrcpy.exe"
+        r"C:\Tools\scrcpy\scrcpy.exe",
+        os.path.expanduser("~/scrcpy/scrcpy.exe"),
+        "/usr/bin/scrcpy",
+        "/usr/local/bin/scrcpy",
+        "/opt/homebrew/bin/scrcpy"
     ]
     for c in candidates:
-        if os.path.exists(c):
+        if c and os.path.exists(c):
             return c
     return None
 
@@ -486,7 +490,7 @@ def prompt_mode_selection(dry_run: bool = False, serial: Optional[str] = None) -
 
     print(f"  {C_ORANGE}[ 3 ] 🟠 HIGH MODE{C_RESET} ────── {C_WHITE}AGGRESSIVE ACCELERATION (Sluggish/Budget Devices){C_RESET}")
     print(f"        {C_GRAY}• Scope   :{C_RESET} Medium + vendor bloat (Bixby, Joyose), App Standby RESTRICTED,")
-    print(f"                    Deep Doze allowlist cleanup, 0 GB zRAM / RAM Plus off")
+    print(f"                    Deep Doze allowlist cleanup, Virtual RAM off guidance")
     print(f"        {C_GRAY}• Target  :{C_RESET} Power users, older devices, budget 2GB-4GB hardware with lag\n")
 
     print(f"  {C_RED}[ 4 ] 🔴 ULTRA MODE{C_RESET} ───── {C_WHITE}EXTREME STRIP-DOWN (High-Risk / Power Users){C_RESET}")

@@ -70,6 +70,32 @@ class TestUpdateDatabase(unittest.TestCase):
         self.assertEqual(categorized["samsung"]["com.samsung.android.bixby.agent"]["tier"], "Advanced")
         self.assertEqual(categorized["xiaomi"]["com.miui.msa.global"]["tier"], "Recommended")
 
+    def test_parse_community_list_dictionary_mapping(self):
+        """Ensure parser accepts upstream UAD-ng dictionary mapping format."""
+        raw_dict_data = {
+            "com.samsung.android.bixby.agent": {
+                "removal": "Advanced",
+                "description": "Bixby Voice wakeup daemon",
+                "dependencies": [],
+                "neededBy": []
+            },
+            "com.miui.analytics": {
+                "removal": "Recommended",
+                "description": "Xiaomi analytics service"
+            },
+            "invalid_pkg; rm -rf": {
+                "removal": "Recommended"
+            }
+        }
+        categorized, accepted, rejected = parse_community_list(raw_dict_data)
+        self.assertEqual(accepted, 2)
+        self.assertEqual(rejected, 1)
+        self.assertIn("samsung", categorized)
+        self.assertIn("xiaomi", categorized)
+        self.assertIn("com.samsung.android.bixby.agent", categorized["samsung"])
+        self.assertEqual(categorized["samsung"]["com.samsung.android.bixby.agent"]["tier"], "Advanced")
+        self.assertEqual(categorized["xiaomi"]["com.miui.analytics"]["tier"], "Recommended")
+
     def test_merge_databases(self):
         """Ensure incoming packages merge into existing structure without overwriting custom categories."""
         existing_db = {
