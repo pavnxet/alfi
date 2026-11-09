@@ -51,6 +51,8 @@ except ImportError:
     except ImportError:
         __version__ = "1.2.0"
 
+from ui import ui as _ui_factory
+
 from connect import run_adb, get_connected_devices, get_device_info
 from device_tracker import get_device_fingerprint
 from modes import (
@@ -300,118 +302,128 @@ def run_wizard_action(
         err_box += f"{C_RED}╰{'─' * 72}╯{C_RESET}\n"
         return False, err_box
 
+def get_ui():
+    """Return the shared UI facade (capabilities + theme + layout)."""
+    return _ui_factory()
+
+
 def print_banner():
-    """Print the ALFi ASCII brand logo and subtitle."""
-    banner = f"""
-{C_GREEN}   █████╗ ██╗     ███████╗██╗
-  ██╔══██╗██║     ██╔════╝██║
-  ███████║██║     █████╗  ██║
-  ██╔══██║██║     ██╔══╝  ██║
-  ██║  ██║███████╗██║     ██║
-  ╚═╝  ╚═╝╚══════╝╚═╝     ╚═╝{C_RESET}
-  {C_YELLOW}⚡{C_RESET} {C_WHITE}A L F i{C_RESET}  {C_GRAY}—{C_RESET}  {C_GREEN}A N D R O I D   L A G   F I X E R{C_RESET}  {C_GRAY}[v{__version__}]{C_RESET}  {C_YELLOW}⚡{C_RESET}
-"""
-    print(banner)
+    """Print the ALFi brand header, degrading to one plain line when needed."""
+    u = get_ui()
+    t = u.theme
+    if not u.caps.unicode or u.caps.compact:
+        u.print(t.paint("  ALFi  ", "ok") + t.paint("-  Android Lag Fixer  [v%s]" % __version__, "title"))
+        return
+    art = [
+        "   \u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2557     \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2557",
+        "  \u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557\u2588\u2588\u2551     \u2588\u2588\u2554\u2550\u2550\u2550\u2550\u255d\u2588\u2588\u2551",
+        "  \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2551\u2588\u2588\u2551     \u2588\u2588\u2588\u2588\u2588\u2557  \u2588\u2588\u2551",
+        "  \u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2551\u2588\u2588\u2551     \u2588\u2588\u2554\u2550\u2550\u255d  \u2588\u2588\u2551",
+        "  \u2588\u2588\u2551  \u2588\u2588\u2551\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2551     \u2588\u2588\u2551",
+        "  \u255a\u2550\u255d  \u255a\u2550\u255d\u255a\u2550\u2550\u2550\u2550\u2550\u2550\u255d\u255a\u2550\u255d     \u255a\u2550\u255d",
+    ]
+    for line in art:
+        u.print(t.paint(line, "ok"))
+    u.print("  " + t.paint("A L F i", "title") + t.paint("  -  A N D R O I D   L A G   F I X E R  ", "muted")
+            + t.paint("[v%s]" % __version__, "warn"))
+
 
 def print_device_card(
     device_info: Optional[Dict[str, Any]] = None,
     total_devices: int = 0,
     active_serial: Optional[str] = None
 ):
-    """Render a modern rounded status card for connected hardware."""
-    width = 74
+    """Render the device status card. Every row is padded by visible width."""
+    u = get_ui()
+    t, g = u.theme, u.glyph
+    dot = g["dot"]
     scrcpy_bin = find_scrcpy_binary()
-    mirror_label = f"{C_GREEN}READY{C_RESET}" if scrcpy_bin else f"{C_GRAY}NOT FOUND{C_RESET}"
+    mirror = t.paint("ready", "ok") if scrcpy_bin else t.paint("not found", "muted")
+    rows = []
 
-    print(f"{C_BORDER}╭{'─' * (width - 2)}╮{C_RESET}")
     if device_info and active_serial:
-        brand = device_info.get("brand", "Unknown").upper()
-        model = device_info.get("model", "Device")
-        android = device_info.get("android_version", "?")
-        sdk = device_info.get("sdk_level", "?")
-        patch = device_info.get("security_patch", "N/A")
-        is_wireless = ":" in active_serial
-        conn_label = "WIRELESS" if is_wireless else "USB"
-
-        line1 = f" {C_GREEN}●{C_RESET} {C_WHITE}ACTIVE PHONE{C_RESET}  : {brand} {model} ({conn_label})"
-        line2 = f" {C_CYAN}●{C_RESET} {C_WHITE}PLATFORM{C_RESET}      : Android {android} (SDK {sdk})   {C_GRAY}● Patch: {patch}{C_RESET}"
-        
+        brand = str(device_info.get("brand", "Unknown")).upper()
+        model = str(device_info.get("model", "Device"))
+        android = str(device_info.get("android_version", "?"))
+        sdk = str(device_info.get("sdk_level", "?"))
+        patch = str(device_info.get("security_patch", "N/A"))
+        conn = "WIRELESS" if ":" in active_serial else "USB"
+        rows.append(t.paint(dot, "ok") + " " + t.paint("ACTIVE PHONE", "title")
+                    + "  : " + brand + " " + model + " (" + conn + ")")
+        rows.append(t.paint(dot, "info") + " " + t.paint("PLATFORM", "title")
+                    + "      : Android " + android + " (SDK " + sdk + ")   "
+                    + t.paint(dot + " patch " + patch, "muted"))
         if total_devices > 1:
-            line3 = f" {C_YELLOW}●{C_RESET} {C_WHITE}TARGET STATUS{C_RESET} : ONLINE ({total_devices} attached)     {C_CYAN}● Switch: [D]{C_RESET}"
+            rows.append(t.paint(dot, "warn") + " " + t.paint("TARGET", "title")
+                        + "        : online, " + str(total_devices) + " attached   "
+                        + t.paint("switch with [D]", "info"))
         else:
-            line3 = f" {C_GREEN}●{C_RESET} {C_WHITE}STATUS{C_RESET}        : ONLINE (ADB Authorized)   {C_GRAY}● Mirror: {mirror_label}{C_RESET}"
-
-        print(pad_box_line(line1, width))
-        print(pad_box_line(line2, width))
-        print(pad_box_line(line3, width))
+            rows.append(t.paint(dot, "ok") + " " + t.paint("STATUS", "title")
+                        + "        : ONLINE (authorized)   " + t.paint("mirror: ", "muted") + mirror)
     elif total_devices > 0:
-        line1 = f" {C_YELLOW}⚠️  HARDWARE{C_RESET}     : {total_devices} DEVICE(S) DETECTED (UNAUTHORIZED)"
-        line2 = f" {C_WHITE}💡 ACTION NEEDED{C_RESET} : Unlock phone screen and tap 'Always allow from this computer'"
-        line3 = f" {C_GRAY}● STATUS{C_RESET}        : WAITING FOR RSA KEY       {C_CYAN}● Manage: [D]{C_RESET}"
-        print(pad_box_line(line1, width))
-        print(pad_box_line(line2, width))
-        print(pad_box_line(line3, width))
+        rows.append(t.paint(g["warn"], "warn") + " " + t.paint("HARDWARE", "title")
+                    + "      : " + str(total_devices) + " device(s) detected, UNAUTHORIZED")
+        rows.append("  " + t.paint("action", "muted") + "      : unlock the phone and tap "
+                    + t.paint("'Always allow from this computer'", "title"))
+        rows.append(t.paint(dot, "muted") + " " + t.paint("STATUS", "title")
+                    + "        : WAITING FOR RSA KEY   " + t.paint("manage with [D]", "info"))
     else:
-        line1 = f" {C_YELLOW}○{C_RESET} {C_WHITE}HARDWARE{C_RESET}      : NO PHYSICAL DEVICE CONNECTED (Simulator / Headless)"
-        line2 = f" {C_CYAN}💡 TIP{C_RESET}           : Plug in USB cable or connect via Wireless Debugging [D]"
-        line3 = f" {C_GRAY}●{C_RESET} {C_WHITE}STATUS{C_RESET}        : STANDBY                   {C_GRAY}● Mirror: {mirror_label}{C_RESET}"
-        print(pad_box_line(line1, width))
-        print(pad_box_line(line2, width))
-        print(pad_box_line(line3, width))
-    print(f"{C_BORDER}╰{'─' * (width - 2)}╯{C_RESET}")
+        rows.append(t.paint("o", "warn") + " " + t.paint("HARDWARE", "title")
+                    + "      : no device connected (simulator / headless)")
+        rows.append("  " + t.paint("tip", "muted") + "         : plug in USB or enable "
+                    + t.paint("Wireless Debugging", "title") + ", then press [D]")
+        rows.append(t.paint(dot, "muted") + " " + t.paint("STATUS", "title")
+                    + "        : STANDBY   " + t.paint("mirror: ", "muted") + mirror)
+
+    u.print(u.box(rows, title="DEVICE"))
+
 
 def print_menu(total_devices: int = 0):
-    """Display categorized command decks with rounded box formatting."""
-    width = 74
+    """Render the dashboard decks. Width is adaptive; rows never overflow the box."""
+    u = get_ui()
+    t = u.theme
+    dev_tag = " (" + str(total_devices) + " connected)" if total_devices > 1 else ""
 
-    def print_deck(title: str, items: List[Tuple[str, str, str]]):
-        header = f"─ {title} "
-        border_top = f"{C_BORDER}╭{header}{'─' * (width - 2 - len(header))}╮{C_RESET}"
-        print(border_top)
+    def deck(title, items):
+        rows = []
         for num, icon, desc in items:
-            key_str = f"{C_GREEN}[{num.rjust(2)}]{C_RESET}"
-            content = f"  {key_str} {icon}  {C_WHITE}{desc}{C_RESET}"
-            print(f"{C_BORDER}│{C_RESET}{content:<90}{C_BORDER}│{C_RESET}")
-        print(f"{C_BORDER}╰{'─' * (width - 2)}╯{C_RESET}")
+            key = t.paint("[" + str(num).rjust(2) + "]", "ok")
+            lead = (" " + icon + "  ") if u.caps.unicode else "  "
+            rows.append(" " + key + lead + desc)
+        u.print(u.box(rows, title=title))
 
-    # Deck 1: Fast Track
-    print_deck("⚡ FAST TRACK: MULTI-TIER TUNING", [
-        (" 1", "🚀", "Multi-Tier Optimization (" + C_GREEN + "Low" + C_RESET + " | " + C_YELLOW + "Medium" + C_RESET + " | " + C_ORANGE + "High" + C_RESET + " | " + C_RED + "Ultra" + C_RESET + ")")
+    deck("FAST TRACK: MULTI-TIER TUNING", [
+        ("1", "\U0001F680", "Multi-Tier Optimization ("
+         + t.paint("Low", "ok") + " | " + t.paint("Medium", "warn") + " | "
+         + t.paint("High", "accent") + " | " + t.paint("Ultra", "danger") + ")"),
+    ])
+    deck("DIAGNOSTICS & HARDWARE AUDIT", [
+        ("2", "\U0001F50D", "Diagnose Root Causes (CPU, memory pressure, zRAM)"),
+        ("3", "\u23F1", "Frame Pacing Benchmark (jank ratio, 1% low FPS)"),
+        ("4", "\u26A1", "BatteryStats & Wakelock Reduction Audit"),
+        ("5", "\U0001F50B", "Deep Doze & DeviceIdle Allowlist Cleanup"),
+    ])
+    deck("ENGINE TUNING & BACKGROUND RESTRAINTS", [
+        ("6", "\u26A1", "AOT ART Pre-Compile (speed up app launches)"),
+        ("7", "\U0001F6E1", "AppOps Background Limits (throttle social/shopping)"),
+        ("8", "\U0001F3A8", "0.5x UI Animations & System Cache Maintenance"),
+    ])
+    deck("DEFENSE, RESCUE & RECOVERY", [
+        ("9", "\U0001F4F1", "Export On-Device Shizuku Scripts (.sh)"),
+        ("10", "\U0001F691", "Emergency Feature Rescue (fix broken services)"),
+        ("11", "\U0001F504", "1-Click Rollback From Latest Snapshot"),
+        ("12", "\U0001F4CA", "Multi-Device Audit Vault & History"),
+        ("13", "\U0001F310", "Update Community Debloat Catalog (UAD-ng)"),
     ])
 
-    # Deck 2: Diagnostics & Audit
-    print_deck("🔍 DIAGNOSTICS & HARDWARE AUDIT", [
-        (" 2", "🔍", "Diagnose Root Causes (CPU, Memory Pressure & zRAM Swapping)"),
-        (" 3", "⏱️ ", "Run Frame Pacing Benchmark (Jank Ratio & 1% Low FPS)"),
-        (" 4", "⚡", "BatteryStats & Wakelock Reduction Audit (Before vs After)"),
-        (" 5", "🔋", "Deep Doze Enforcement & DeviceIdle Battery Allowlist Clean")
-    ])
-
-    # Deck 3: Engine Tuning
-    print_deck("🚀 ENGINE TUNING & BACKGROUND RESTRAINTS", [
-        (" 6", "⚡", "Ahead-Of-Time (AOT) ART Pre-Compile (Speed Up Launches)"),
-        (" 7", "🛡️ ", "AppOps Background Limits (Throttle Social & Shopping Hogs)"),
-        (" 8", "🎨", "Fast 0.5x UI Animations & System Cache Maintenance")
-    ])
-
-    # Deck 4: Defense & Rescue
-    print_deck("🚑 DEFENSE, RESCUE & RECOVERY", [
-        (" 9", "📱", "Export Standalone On-Device Shizuku Scripts (.sh)"),
-        ("10", "🚑", "Emergency Feature Rescue (Fix Critical Broken Services)"),
-        ("11", "🔄", "1-Click Rollback / Restore From Latest Snapshot Manifest"),
-        ("12", "📊", "Multi-Device Hardware Audit Vault & History Records"),
-        ("13", "🌐", "Update Community Debloat Catalog (UAD-ng Ingestion)")
-    ])
-
-    # Deck 5: System Control
-    dev_tag = f" ({total_devices} Connected)" if total_devices > 1 else ""
-    sys_items = [
-        (" D", "📱", f"Device Manager & Switch Target Phone{dev_tag}")
-    ]
+    sys_items = [("D", "\U0001F4F1", "Device Manager & Switch Target" + dev_tag)]
     if find_scrcpy_binary():
-        sys_items.append((" S", "🖥️ ", "Launch Real-Time Screen Mirroring (scrcpy)"))
-    sys_items.append((" 0", "🚪", "Exit Dashboard"))
-    print_deck("⚙️ SYSTEM CONTROL", sys_items)
+        sys_items.append(("S", "\U0001F5A5", "Launch Screen Mirroring (scrcpy)"))
+    sys_items.append(("0", "\U0001F6AA", "Exit Dashboard"))
+    deck("SYSTEM CONTROL", sys_items)
+
+    u.print(t.paint(" " + u.glyph["arrow"] + " enter a number, or D devices / S mirror / 0 exit", "muted"))
+
 
 def prompt_device_selection(
     current_serial: Optional[str] = None
@@ -536,33 +548,34 @@ def prompt_mode_selection(dry_run: bool = False, serial: Optional[str] = None) -
     """Display modern ALFi 4-Tier Visual Selection Deck."""
     clear_screen()
     print_banner()
-    width = 74
-    print(f"\n{C_BORDER}╭{'─' * (width - 2)}╮{C_RESET}")
-    title = f"{C_YELLOW}⚡{C_RESET} {C_WHITE}CHOOSE OPTIMIZATION ARCHITECTURE{C_RESET} {C_YELLOW}⚡{C_RESET}"
-    print(pad_box_line(title, width, align="center"))
-    print(f"{C_BORDER}╰{'─' * (width - 2)}╯{C_RESET}\n")
+    u = get_ui()
+    t = u.theme
+    u.print("")
+    u.print(u.box([t.paint("CHOOSE OPTIMIZATION ARCHITECTURE", "title")], title="MODES"))
 
-    print(f"  {C_GREEN}[ 1 ] 🟢 LOW MODE{C_RESET} ─────── {C_WHITE}SAFE BASELINE (Zero Risk){C_RESET}")
-    print(f"        {C_GRAY}• Scope   :{C_RESET} Carrier adware stubs, 0.75x animations, stale cache trim")
-    print(f"        {C_GRAY}• Target  :{C_RESET} Family phones, work profiles, zero tolerance for feature changes\n")
+    deck = [
+        ("1", "ok", "LOW", "safe baseline, zero risk",
+         "Carrier adware stubs, 0.75x animations, stale cache trim",
+         "family phones, work profiles, no feature changes"),
+        ("2", "warn", "MEDIUM", "balanced daily driver, recommended",
+         "Low + OEM telemetry (Glance, Meta, MSA), 0.5x animations, ART speed-profile",
+         "everyday phones wanting a snappy UI and cooler battery"),
+        ("3", "accent", "HIGH", "aggressive acceleration, sluggish devices",
+         "Medium + vendor bloat (Bixby, Joyose), restricted standby, Doze cleanup",
+         "power users, older devices, 2-4 GB RAM"),
+        ("4", "danger", "ULTRA", "extreme strip-down, high risk",
+         "High + duplicate stores/accounts, 0.0x animations, full AOT",
+         "requires the I UNDERSTAND gate"),
+    ]
+    for num, role, name, subtitle, scope, target in deck:
+        head = (t.paint("[" + num + "]", role) + " "
+                + t.paint(name + " MODE", role) + " - " + t.paint(subtitle, "title"))
+        rows = [head,
+                t.paint("scope ", "muted") + ": " + scope,
+                t.paint("target", "muted") + ": " + target]
+        u.print(u.box(rows))
 
-    print(f"  {C_YELLOW}[ 2 ] 🟡 MEDIUM MODE{C_RESET} ──── {C_WHITE}BALANCED DAILY DRIVER (Recommended){C_RESET}")
-    print(f"        {C_GRAY}• Scope   :{C_RESET} Low + OEM telemetry (Glance, Meta, MSA), 0.5x animations,")
-    print(f"                    ART speed-profile on top user apps, social AppOps limits")
-    print(f"        {C_GRAY}• Target  :{C_RESET} Everyday smartphones wanting snappy UI & cooler battery\n")
-
-    print(f"  {C_ORANGE}[ 3 ] 🟠 HIGH MODE{C_RESET} ────── {C_WHITE}AGGRESSIVE ACCELERATION (Sluggish/Budget Devices){C_RESET}")
-    print(f"        {C_GRAY}• Scope   :{C_RESET} Medium + vendor bloat (Bixby, Joyose), App Standby RESTRICTED,")
-    print(f"                    Deep Doze allowlist cleanup, Virtual RAM off guidance")
-    print(f"        {C_GRAY}• Target  :{C_RESET} Power users, older devices, budget 2GB-4GB hardware with lag\n")
-
-    print(f"  {C_RED}[ 4 ] 🔴 ULTRA MODE{C_RESET} ───── {C_WHITE}EXTREME STRIP-DOWN (High-Risk / Power Users){C_RESET}")
-    print(f"        {C_GRAY}• Scope   :{C_RESET} High + duplicate OEM accounts (Samsung/Mi ID), duplicate stores,")
-    print(f"                    secondary keyboards/launchers, 0.0x zero animations, full AOT")
-    print(f"        {C_GRAY}• Safety  :{C_RESET} {C_RED}Double-Gate: Dependency Graph Check + Requires 'I UNDERSTAND'{C_RESET}\n")
-
-    print(f"  {C_GRAY}[ 0 ] 🔙 Return to Main Menu{C_RESET}")
-    print(f"{C_BORDER}{'─' * width}{C_RESET}")
+    u.print(t.paint(" [0] back to dashboard", "muted"))
 
     try:
         choice = input(f"{C_GREEN}👉 Select mode [1-4]: {C_RESET}").strip()
@@ -600,12 +613,13 @@ def prompt_mode_selection(dry_run: bool = False, serial: Optional[str] = None) -
     if selected_mode == "ultra":
         clear_screen()
         print_banner()
-        print(f"\n{C_RED}{'!' * width}")
-        print(" ⚠️ CAUTION: ULTRA MODE SELECTED (High-Risk System Strip-Down)")
-        print(f"{'!' * width}{C_RESET}")
-        print(" Ultra mode aggressively strips duplicate OEM stores, cloud sync accounts,")
-        print(" secondary keyboards, and freezes background services completely.")
-        print(f"{C_BORDER}{'─' * width}{C_RESET}")
+        u.print("")
+        u.print(u.box([
+            t.paint("CAUTION: ULTRA MODE SELECTED", "danger") + t.paint("  (high-risk system strip-down)", "muted"),
+            "Ultra strips duplicate OEM stores and cloud accounts, secondary",
+            "keyboards and launchers, and freezes background services completely.",
+            t.paint("This is the only gate between you and a reset: type the phrase exactly.", "warn"),
+        ], title="SAFETY GATE"))
         try:
             val = input(f"{C_YELLOW}👉 Type 'I UNDERSTAND' to confirm Ultra mode execution: {C_RESET}").strip()
         except (KeyboardInterrupt, EOFError):
