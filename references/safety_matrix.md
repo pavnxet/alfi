@@ -60,3 +60,20 @@ adb shell pm disable-user --user 0 <package_name>
    adb shell pm enable <package_name>
    ```
 5. A factory reset automatically restores 100% of out-of-the-box factory settings.
+
+---
+
+## 4. Version-Aware Command Resolution & Data Retention (Android 6 to 17+)
+
+| Desired State | Current State | Android 6–16 Execution | Android 17+ (SDK 37+) Resolution | Data Retention |
+|---|---|---|---|---|
+| **Disabled** | Enabled | `pm disable-user --user <id>` | `pm disable-user --user <id>` | **100% Preserved** (App data & preferences intact) |
+| **Uninstalled** | Enabled | `pm uninstall --user <id>` | **Blocked by platform ➡️ Falls back to `disable-user`** | App data deleted (APK preserved in `/system`) |
+| **Enabled** | Disabled | `pm enable --user <id>` | `pm enable --user <id>` | **100% Preserved** |
+| **Reinstalled** | Uninstalled | `cmd package install-existing --user <id>` | `cmd package install-existing --user <id>` | Fresh out-of-the-box app data |
+
+### Fallback Ladder
+If OEM restrictions block a command:
+- `uninstall ➡️ disable`: When `only root can delete` or `DELETE_FAILED_USER_RESTRICTED` is returned.
+- `disable ➡️ uninstall`: When `Cannot disable system packages` (HyperOS / MIUI SecurityException) is returned.
+
