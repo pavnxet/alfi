@@ -42,13 +42,14 @@ def get_display_refresh_rate(target_serial: Optional[str] = None) -> float:
     ok, out = run_adb(prefix + ["shell", "dumpsys display"], timeout=5)
     if ok and out:
         import re
-        match = re.search(r"(\d+(\.\d+)?)fps", out, re.IGNORECASE)
+        match = re.search(r"(?:fps\s*[:=]\s*(\d+(?:\.\d+)?)|(\d+(?:\.\d+)?)\s*fps)", out, re.IGNORECASE)
         if match:
             try:
-                val = float(match.group(1))
+                raw_val = match.group(1) or match.group(2)
+                val = float(raw_val)
                 if 30.0 <= val <= 240.0:
                     return val
-            except ValueError:
+            except (ValueError, TypeError):
                 pass
 
     return 60.0

@@ -279,7 +279,8 @@ def main():
     info = get_device_info(target_serial)
     fp = get_device_fingerprint(target_serial)
     slug = fp["device_slug"]
-    sdk_level = int(info.get("sdk_level", 31))
+    raw_sdk = info.get("sdk_level", 31)
+    sdk_level = int(raw_sdk) if raw_sdk and str(raw_sdk).isdigit() else 31
 
     disabled_pkgs = get_disabled_packages(target_serial, user_id=args.user)
 

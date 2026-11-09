@@ -121,7 +121,8 @@ def main():
 
     target_serial = auth[0]["serial"]
     info = get_device_info(target_serial)
-    sdk_level = int(info.get("sdk_level", 31))
+    raw_sdk = info.get("sdk_level", 31)
+    sdk_level = int(raw_sdk) if raw_sdk and str(raw_sdk).isdigit() else 31
     db = load_database()
 
     if not args.json:

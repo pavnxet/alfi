@@ -30,7 +30,7 @@ def set_animation_scale(scale="0.5", serial=None, dry_run=False):
     label = "[DRY-RUN] " if dry_run else ""
     print(f"[*] {label}Setting animation scales to {scale}x...")
     for k in keys:
-        if dry_run or not serial:
+        if dry_run:
             print(f"  ✅ {k} -> {scale} (Simulated)")
         else:
             ok, out = run_adb(prefix + ["shell", f"settings put global {k} {scale}"])
@@ -44,7 +44,7 @@ def trim_system_cache(serial=None, dry_run=False):
     prefix = ["-s", serial] if serial else []
     label = "[DRY-RUN] " if dry_run else ""
     print(f"[*] {label}Trimming stale system caches...")
-    if dry_run or not serial:
+    if dry_run:
         print("  ✅ Cache trimmed successfully (Simulated).")
     else:
         ok, out = run_adb(prefix + ["shell", "pm trim-caches 1000G"], timeout=45)

@@ -23,7 +23,12 @@ def check_cpu_and_load(serial=None):
     
     # 1. Load averages
     ok, load_out = run_adb(prefix + ["shell", "cat /proc/loadavg"])
-    load_avg = load_out.split()[:3] if ok else ["Unknown", "Unknown", "Unknown"]
+    raw_parts = load_out.split() if (ok and load_out) else []
+    load_avg = [
+        raw_parts[0] if len(raw_parts) > 0 else "Unknown",
+        raw_parts[1] if len(raw_parts) > 1 else "Unknown",
+        raw_parts[2] if len(raw_parts) > 2 else "Unknown"
+    ]
     
     # 2. Dumpsys cpuinfo (past few seconds)
     ok, cpu_out = run_adb(prefix + ["shell", "dumpsys cpuinfo"], timeout=15)

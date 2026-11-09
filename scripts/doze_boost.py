@@ -80,12 +80,22 @@ def parse_deviceidle_whitelist(raw_output: str) -> Dict[str, List[str]]:
             current_section = "system"
             continue
 
+        # Detect line-level prefix or section headers (e.g. 'user,com.example.app,1001')
+        line_lower = line.lower()
+        line_type = None
+        if line_lower.startswith("user,") or line_lower.startswith("user:"):
+            line_type = "user"
+        elif line_lower.startswith("system,") or line_lower.startswith("system:"):
+            line_type = "system"
+
+        effective_section = line_type if line_type else current_section
+
         # Output format can be 'system,com.example.app,1001' or 'com.example.app'
         parts = [p.strip() for p in line.split(",") if p.strip()]
         for p in parts:
             if re.match(r"^[a-zA-Z0-9_]+(\.[a-zA-Z0-9_]+)+$", p):
                 all_packages.append(p)
-                if current_section == "user":
+                if effective_section == "user":
                     user_whitelist.append(p)
                 else:
                     system_whitelist.append(p)

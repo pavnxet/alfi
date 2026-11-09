@@ -39,6 +39,7 @@ def parse_batterystats(raw_output: str) -> Dict[str, Any]:
         "screen_off_ms": 0,
         "computed_drain_mah": 0.0,
         "drain_rate_mah_per_hr": 0.0,
+        "drain_recorded": False,
         "total_wakelocks_count": 0,
         "total_wakelock_time_ms": 0,
         "top_wakelock_culprits": []
@@ -60,6 +61,7 @@ def parse_batterystats(raw_output: str) -> Dict[str, Any]:
             m = re.search(r"Computed drain:\s*([\d\.]+)", line_clean)
             if m:
                 metrics["computed_drain_mah"] = float(m.group(1))
+                metrics["drain_recorded"] = True
 
         # Screen on/off
         if "Screen on:" in line_clean:
@@ -98,10 +100,10 @@ def parse_batterystats(raw_output: str) -> Dict[str, Any]:
 
     # Compute drain rate per hour
     total_time_ms = metrics["screen_on_ms"] + metrics["screen_off_ms"]
-    if total_time_ms > 0 and metrics["computed_drain_mah"] > 0:
+    if total_time_ms > 0 and metrics["computed_drain_mah"] is not None and metrics["computed_drain_mah"] > 0:
         hours = total_time_ms / (1000 * 3600)
         metrics["drain_rate_mah_per_hr"] = round(metrics["computed_drain_mah"] / hours, 2)
-    elif metrics["computed_drain_mah"] > 0:
+    elif metrics["computed_drain_mah"] is not None and metrics["computed_drain_mah"] > 0:
         # Default assumption 1 hour window if total time is unrecorded
         metrics["drain_rate_mah_per_hr"] = metrics["computed_drain_mah"]
 
@@ -263,8 +265,9 @@ def main():
         print("=" * 65)
         print(f" Total Partial Wakelocks: {metrics['total_wakelocks_count']}")
         print(f" Total Wakelock Duration: {metrics['total_wakelock_time_ms']} ms")
-        print(f" Computed Drain:          {metrics['computed_drain_mah']} mAh")
-        print(f" Drain Rate (Estimated):  {metrics['drain_rate_mah_per_hr']} mAh/hr")
+        drain_suffix = "" if metrics.get("drain_recorded") else " (unrecorded in current window)"
+        print(f" Computed Drain:          {metrics['computed_drain_mah']} mAh{drain_suffix}")
+        print(f" Drain Rate (Estimated):  {metrics['drain_rate_mah_per_hr']} mAh/hr{drain_suffix}")
         if metrics["top_wakelock_culprits"]:
             print("\n Top Wakelock Culprits:")
             for c in metrics["top_wakelock_culprits"]:

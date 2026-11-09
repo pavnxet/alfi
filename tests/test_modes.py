@@ -270,14 +270,85 @@ class TestOptimizationModes(unittest.TestCase):
     def test_operations_state_normalization(self):
         """Ensure apply_package_state accepts 'disable', 'enable', 'uninstall' aliases."""
         from operations import apply_package_state
-        # Dry-run with aliases
-        ok_d, msg_d = apply_package_state("com.test.app", want="disable", dry_run=True)
-        self.assertTrue(ok_d)
-        self.assertIn("disable-user", msg_d)
+        with patch("operations.run_adb", return_value=(True, "")):
+            # Dry-run with aliases
+            ok_d, msg_d = apply_package_state("com.test.app", want="disable", dry_run=True)
+            self.assertTrue(ok_d)
+            self.assertIn("disable-user", msg_d)
 
-        ok_e, msg_e = apply_package_state("com.test.app", want="enable", dry_run=True)
-        self.assertTrue(ok_e)
-        self.assertIn("enable --user", msg_e)
+            ok_e, msg_e = apply_package_state("com.test.app", want="enable", dry_run=True)
+            self.assertTrue(ok_e)
+            self.assertIn("enable --user", msg_e)
+
+    def test_get_package_state_uninstalled_priority(self):
+        """B1 Fix: Ensure uninstalled package reports 'uninstalled' even if dumpsys has enabled=0."""
+        from operations import get_package_state
+        def mock_adb(cmd, **kwargs):
+            cmd_str = " ".join(cmd)
+            if "pm list packages -e" in cmd_str:
+                return (True, "")
+            if "pm list packages -d" in cmd_str:
+                return (True, "")
+            if "pm list packages -u" in cmd_str:
+                return (True, "package:com.example.gone")
+            if "dumpsys package" in cmd_str:
+                return (True, "enabled=0\nUser 0: installed=false")
+            return (True, "")
+
+        with patch("operations.run_adb", side_effect=mock_adb):
+            state = get_package_state("com.example.gone", user_id=0)
+            self.assertEqual(state, "uninstalled")
+
+    def test_restore_uninstalled_package_triggers_install_existing(self):
+        """B1 Fix: Restoring an uninstalled package must call install-existing and not no-op."""
+        from operations import apply_package_state
+        called_commands = []
+        def mock_adb(cmd, **kwargs):
+            cmd_str = " ".join(cmd)
+            called_commands.append(cmd_str)
+            if "pm list packages -e" in cmd_str:
+                return (True, "")
+            if "pm list packages -d" in cmd_str:
+                return (True, "")
+            if "pm list packages -u" in cmd_str:
+                return (True, "package:com.example.gone")
+            if "install-existing" in cmd_str:
+                return (True, "Package com.example.gone installed for user: 0")
+            return (True, "")
+
+        with patch("operations.run_adb", side_effect=mock_adb):
+            ok, msg = apply_package_state("com.example.gone", want="enabled", user_id=0, dry_run=False)
+            self.assertTrue(ok)
+            self.assertTrue(any("install-existing" in c for c in called_commands))
+            self.assertIn("Restored", msg.title())
+
+    def test_doze_whitelist_prefix_parsing(self):
+        """B3 Fix: Dumpsys deviceidle lines with user, and system, prefixes are accurately categorized."""
+        from doze_boost import parse_deviceidle_whitelist
+        raw_output = """
+system,com.android.providers.telephony,1001
+system,com.google.android.gms,1000
+user,com.instagram.android,10150
+"""
+        parsed = parse_deviceidle_whitelist(raw_output)
+        self.assertIn("com.instagram.android", parsed["user"])
+        self.assertNotIn("com.instagram.android", parsed["system"])
+        self.assertIn("com.google.android.gms", parsed["system"])
+
+    def test_bench_refresh_rate_display_mode_parsing(self):
+        """B4 Fix: DisplayModeRecord with fps=120.0 must be extracted accurately."""
+        from bench import get_display_refresh_rate
+        def mock_adb(cmd, **kwargs):
+            cmd_str = " ".join(cmd)
+            if "peak_refresh_rate" in cmd_str:
+                return (False, "")
+            if "dumpsys display" in cmd_str:
+                return (True, "DisplayModeRecord{mMode={id=2, width=1080, height=2400, fps=120.0}}")
+            return (False, "")
+
+        with patch("bench.run_adb", side_effect=mock_adb):
+            fps = get_display_refresh_rate()
+            self.assertEqual(fps, 120.0)
 
     @patch("modes.compile_package", return_value=(True, "Success"))
     @patch("modes.apply_package_state", return_value=(True, "Disabled"))

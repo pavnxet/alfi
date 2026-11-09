@@ -92,8 +92,10 @@ def get_launcher_packages(serial=None):
     """Retrieve all packages that have a visible launcher icon in the app drawer."""
     prefix = ["-s", serial] if serial else []
     ok, out = run_adb(prefix + ["shell", "cmd package query-intent-activities -a android.intent.action.MAIN -c android.intent.category.LAUNCHER"])
+    if not ok or not (out and out.strip()):
+        ok, out = run_adb(prefix + ["shell", "pm query-intent-activities -a android.intent.action.MAIN -c android.intent.category.LAUNCHER"])
     launcher_pkgs = set()
-    if ok:
+    if ok and out:
         for line in out.splitlines():
             match = re.search(r"packageName=([^\s]+)", line)
             if match:
@@ -183,10 +185,10 @@ def main():
             if severity != "CRITICAL":
                 severity = "HIGH"
 
-        # Check ghost app (hidden icon)
-        if pkg not in launcher_pkgs:
+        # Check ghost app (hidden icon) - only evaluate if launcher query returned data
+        if launcher_pkgs and pkg not in launcher_pkgs:
             # Check if it's a known service, plugin or keyboard
-            if not any(k in pkg for k in ["keyboard", "ime", "plugin", "wear", "service"]):
+            if not any(k in pkg for k in ["keyboard", "ime", "plugin", "wear", "service", "addon", "theme"]):
                 reasons.append("👻 HIDDEN GHOST APP (No home screen icon; runs stealth background services)")
                 if severity == "LOW":
                     severity = "MEDIUM"

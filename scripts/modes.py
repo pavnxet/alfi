@@ -28,21 +28,25 @@ if SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, SCRIPTS_DIR)
 
 from connect import run_adb, get_connected_devices, get_device_info
-from operations import apply_package_state
+from operations import apply_package_state, get_package_state
 from tweak_ui import set_animation_scale, trim_system_cache
 from appops_restrict import set_appops_restriction, set_standby_bucket, PRESET_BACKGROUND_HOGS
 from compile_speed import compile_package
 
 def clear_screen():
     """Clear terminal screen and wipe scrollback buffer for a smooth app-like redraw."""
-    if os.environ.get("NO_COLOR"):
+    if os.environ.get("NO_COLOR") or not (sys.stdout and hasattr(sys.stdout, "isatty") and sys.stdout.isatty()):
         return
     try:
         if os.name == "nt":
             os.system("cls")
         else:
-            os.system("clear")
-        sys.stdout.write("\033[H\033[2J\033[3J")
+            term = os.environ.get("TERM", "")
+            if term and term != "dumb":
+                sys.stdout.write("\033[H\033[2J\033[3J")
+                sys.stdout.flush()
+    except Exception:
+        pass
         sys.stdout.flush()
     except Exception:
         pass
@@ -163,13 +167,15 @@ def load_database() -> Dict[str, Any]:
     """Load package database with categories and dependency graphs."""
     db_path = get_database_path()
     if not os.path.exists(db_path):
-        return {"categories": {}}
+        raise FileNotFoundError(
+            f"Package database not found at '{db_path}'. "
+            "Please ensure package_database.json exists in the repository or installation directory."
+        )
     try:
         with open(db_path, "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception as e:
-        print(f"⚠️ Error reading package_database.json: {e}")
-        return {"categories": {}}
+        raise RuntimeError(f"Error reading package database from '{db_path}': {e}")
 
 def get_mode_config(mode: str) -> Dict[str, Any]:
     """Return immutable configuration dictionary for a given mode."""
@@ -404,7 +410,12 @@ def print_preflight_report(
     print(f"  {C_CYAN}• Target Device      :{C_RESET} {C_WHITE}{brand} {model}{C_RESET} (Android {android_ver}, SDK {sdk})")
     print(f"  {C_GREEN}• Debloat Candidates :{C_RESET} {len(approved_pkgs)} bloatware & telemetry packages identified")
     if target_social:
-        hog_names = ", ".join([p.split(".")[-1].capitalize() for p in target_social[:3]])
+        names = []
+        for p in target_social[:3]:
+            parts = p.split(".")
+            name = parts[-2].capitalize() if parts[-1].lower() in ["android", "app", "service"] and len(parts) > 2 else parts[-1].capitalize()
+            names.append(name)
+        hog_names = ", ".join(names)
         extra = f" (+{len(target_social)-3} more)" if len(target_social) > 3 else ""
         print(f"  {C_YELLOW}• AppOps Restrictions:{C_RESET} {len(target_social)} background hogs ({hog_names}{extra})")
     else:
@@ -413,7 +424,7 @@ def print_preflight_report(
     print(f"  {C_WHITE}• Cache Maintenance  :{C_RESET} Trim stale system caches without data loss")
     if target_compile:
         print(f"  {C_GREEN}• ART Pre-Compile    :{C_RESET} Speed-profile AOT compilation on {len(target_compile)} top apps")
-    print(f"  {C_GRAY}• Rollback Safety Net:{C_RESET} Pre-flight snapshot saved to backups/ for 1-click restore")
+    print(f"  {C_GRAY}• Rollback Safety Net:{C_RESET} Snapshot manifest written & fsynced before first mutation")
     print(f"{C_BORDER}{'─' * width}{C_RESET}")
 
 def confirm_preflight_plan(
@@ -567,25 +578,46 @@ def execute_mode_optimization(
             "packages": {}
         }
 
+        # N6 FIX: Query actual real state before mutating (instead of guessing 'enabled')
+        for pkg in approved_pkgs:
+            prev_st = get_package_state(pkg, serial=serial) if not dry_run else "enabled"
+            manifest_data["packages"][pkg] = {
+                "previous_state": prev_st,
+                "new_state": "disabled",
+                "status": "pending"
+            }
+
+        # N3 FIX: Write and fsync pre-flight manifest BEFORE mutating device
+        with open(manifest_path, "w", encoding="utf-8") as f:
+            json.dump(manifest_data, f, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        print(f"[*] Pre-flight restore snapshot secured at: {manifest_path}")
+
         for pkg in approved_pkgs:
             if dry_run:
                 print(f"    [DRY-RUN] Would disable: {pkg}")
                 results["packages_disabled"].append(pkg)
-                manifest_data["packages"][pkg] = {"previous_state": "enabled", "new_state": "disabled"}
+                manifest_data["packages"][pkg]["status"] = "simulated"
             else:
                 ok, msg = apply_package_state(pkg, want="disabled", serial=serial, dry_run=False)
                 if ok:
                     print(f"    ✅ Disabled: {pkg}")
                     results["packages_disabled"].append(pkg)
-                    manifest_data["packages"][pkg] = {"previous_state": "enabled", "new_state": "disabled"}
+                    manifest_data["packages"][pkg]["status"] = "applied"
                 else:
                     print(f"    ⚠️ Failed {pkg}: {msg}")
                     results["packages_failed"].append({"package": pkg, "error": msg})
+                    manifest_data["packages"][pkg]["status"] = f"failed: {msg}"
 
-        # Save manifest
-        with open(manifest_path, "w", encoding="utf-8") as f:
-            json.dump(manifest_data, f, indent=2)
-        print(f"[*] Pre-flight restore manifest written to: {manifest_path}")
+        # Update manifest on disk with final execution outcomes
+        try:
+            with open(manifest_path, "w", encoding="utf-8") as f:
+                json.dump(manifest_data, f, indent=2)
+                f.flush()
+                os.fsync(f.fileno())
+        except Exception:
+            pass
 
         # Mirror manifest to /sdcard/ for on-device Canta/Shizuku recovery
         if not dry_run:
@@ -741,12 +773,22 @@ def main():
             sys.exit(1)
         selected_mode = mode_map[choice]
 
+    # N1 FIX: Enforce confirmation gate even with --json; require --yes for unattended execution
+    is_tty = sys.stdin and hasattr(sys.stdin, "isatty") and sys.stdin.isatty()
+    if not args.yes and not args.force_ultra and not is_tty and not args.dry_run:
+        err_msg = "Error: Unattended execution requires explicit '--yes' confirmation flag."
+        if args.json:
+            print(json.dumps({"success": False, "error": err_msg, "aborted": True}, indent=2))
+        else:
+            print(f"\033[1;38;2;255;82;82m❌ {err_msg}\033[0m")
+        sys.exit(1)
+
     res = execute_mode_optimization(
         selected_mode,
         serial=serial,
         dry_run=args.dry_run,
         force_ultra=args.force_ultra,
-        interactive_confirm=(not args.yes and not args.force_ultra and not args.json),
+        interactive_confirm=(not args.yes and not args.force_ultra),
         auto_confirm=args.yes
     )
 

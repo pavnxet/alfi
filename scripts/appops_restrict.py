@@ -257,17 +257,18 @@ def main():
     target_pkgs = []
     if args.app:
         target_pkgs.append(args.app.strip())
-    elif target_serial and args.preset == "social":
-        ok, out = run_adb(["-s", target_serial, "shell", "pm list packages"])
-        if ok and out:
-            installed = set(l.replace("package:", "").strip() for l in out.splitlines())
-            target_pkgs = [p for p in PRESET_BACKGROUND_HOGS if p in installed]
     elif target_serial and args.preset == "all-user":
         ok, out = run_adb(["-s", target_serial, "shell", "pm list packages -3"])
         if ok and out:
             target_pkgs = [l.replace("package:", "").strip() for l in out.splitlines() if l.strip()]
+    elif target_serial:
+        # Default for real device: inspect installed packages against background hogs
+        ok, out = run_adb(["-s", target_serial, "shell", "pm list packages"])
+        if ok and out:
+            installed = set(l.replace("package:", "").strip() for l in out.splitlines())
+            target_pkgs = [p for p in PRESET_BACKGROUND_HOGS if p in installed]
     else:
-        # Default representative hogs for simulation
+        # Fallback simulation target packages only when running without an attached device
         target_pkgs = [
             "com.facebook.katana",
             "com.instagram.android",

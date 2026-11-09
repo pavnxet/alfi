@@ -30,28 +30,44 @@ def get_package_state(pkg: str, user_id: int = 0, serial: Optional[str] = None) 
         
     prefix = ["-s", serial] if serial else []
     
-    # 1. Quick check via dumpsys package
-    ok, out = run_adb(prefix + ["shell", f"dumpsys package {pkg} | grep -m1 'enabled='"])
-    if ok and out:
-        # e.g.: enabled=0 (default), enabled=1 (enabled), enabled=2 (disabled), enabled=3 (disabled-user)
-        if "enabled=2" in out or "enabled=3" in out or "disabled" in out.lower():
-            return "disabled"
-        if "enabled=1" in out or "enabled=0" in out:
-            return "enabled"
-
-    # 2. Comprehensive check via pm list packages
-    ok_dis, dis_out = run_adb(prefix + ["shell", f"pm list packages -d --user {user_id} {pkg}"])
-    if ok_dis and f"package:{pkg}" in dis_out.split():
-        return "disabled"
-
+    # 1. Primary check via pm list packages for the specific user
     ok_en, en_out = run_adb(prefix + ["shell", f"pm list packages -e --user {user_id} {pkg}"])
     if ok_en and f"package:{pkg}" in en_out.split():
         return "enabled"
 
-    # Check if package exists at all on the device (uninstalled for user 0)
+    ok_dis, dis_out = run_adb(prefix + ["shell", f"pm list packages -d --user {user_id} {pkg}"])
+    if ok_dis and f"package:{pkg}" in dis_out.split():
+        return "disabled"
+
+    # 2. Check if package exists on device (uninstalled for user 0, but present in /system or other users)
     ok_all, all_out = run_adb(prefix + ["shell", f"pm list packages -u {pkg}"])
     if ok_all and f"package:{pkg}" in all_out.split():
         return "uninstalled"
+
+    # 3. Fallback check via dumpsys package inspecting user-specific block
+    ok, out = run_adb(prefix + ["shell", f"dumpsys package {pkg}"])
+    if ok and out:
+        user_section = False
+        for line in out.splitlines():
+            line_str = line.strip()
+            if f"User {user_id}:" in line_str:
+                user_section = True
+                continue
+            if user_section:
+                if "installed=false" in line_str:
+                    return "uninstalled"
+                if "enabled=2" in line_str or "enabled=3" in line_str or "disabled" in line_str.lower():
+                    return "disabled"
+                if "enabled=1" in line_str or "enabled=0" in line_str:
+                    return "enabled"
+                if line_str.startswith("User "):
+                    break
+        if "installed=false" in out:
+            return "uninstalled"
+        if "enabled=2" in out or "enabled=3" in out:
+            return "disabled"
+        if "enabled=1" in out:
+            return "enabled"
 
     return "not_found"
 
@@ -81,14 +97,15 @@ def apply_package_state(
     elif want in ["uninstall", "uninstalled"]:
         want = "uninstalled"
 
+    try:
+        sdk_level = int(sdk_level) if str(sdk_level).isdigit() else 31
+    except Exception:
+        sdk_level = 31
+
     # Android 17 (SDK 37+) compatibility check
     if want == "uninstalled" and sdk_level >= 37:
         print(f"  ℹ️ Android 17+ (SDK {sdk_level}) hard-blocks user-space system uninstall. Falling back to 'disable-user'.")
         want = "disabled"
-
-    current = get_package_state(pkg, user_id, serial)
-    if current == want:
-        return True, f"Package {pkg} is already in state '{want}'"
 
     if dry_run:
         cmd_preview = f"pm disable-user --user {user_id} {pkg}" if want == "disabled" else (
@@ -96,6 +113,10 @@ def apply_package_state(
             f"pm enable --user {user_id} {pkg}"
         )
         return True, f"[DRY-RUN] Would execute: adb shell {cmd_preview}"
+
+    current = get_package_state(pkg, user_id, serial)
+    if current == want:
+        return True, f"Package {pkg} is already in state '{want}'"
 
     # Execution ladder
     if want == "disabled":
@@ -145,8 +166,15 @@ def apply_package_state(
         # 1. If currently uninstalled, reinstall existing APK for user
         if current == "uninstalled":
             ok_re, out_re = run_adb(prefix + ["shell", f"cmd package install-existing --user {user_id} {pkg}"])
-            if ok_re and "installed" in out_re.lower():
-                return True, f"Reinstalled existing package: {pkg}"
+            if not ok_re or "installed" not in out_re.lower():
+                # Fallback to older pm install-existing syntax
+                ok_re, out_re = run_adb(prefix + ["shell", f"pm install-existing --user {user_id} {pkg}"])
+            verified = get_package_state(pkg, user_id, serial)
+            if verified in ("enabled", "disabled") or "installed" in out_re.lower():
+                # Ensure it is in enabled state after installation
+                run_adb(prefix + ["shell", f"pm enable --user {user_id} {pkg}"])
+                return True, f"Reinstalled and restored package: {pkg}"
+            return False, f"Failed to restore uninstalled package {pkg}. Output: {out_re}"
 
         # 2. Try pm enable
         ok, out = run_adb(prefix + ["shell", f"pm enable --user {user_id} {pkg}"])

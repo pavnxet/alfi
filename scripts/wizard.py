@@ -10,6 +10,7 @@ rescue, and real-time screen mirroring into a clean, modern interface.
 
 import sys
 import os
+import re
 import shutil
 import subprocess
 import argparse
@@ -39,6 +40,17 @@ if os.name == "nt":
     except Exception:
         pass
 
+import shutil
+import unicodedata
+
+try:
+    from __init__ import __version__
+except ImportError:
+    try:
+        from scripts import __version__
+    except ImportError:
+        __version__ = "1.2.0"
+
 from connect import run_adb, get_connected_devices, get_device_info
 from device_tracker import get_device_fingerprint
 from modes import (
@@ -49,20 +61,55 @@ from modes import (
     confirm_preflight_plan
 )
 
-# ANSI Palette (ALFi Brand: Neon Mint Green, Dark Charcoal, Lightning Yellow, Crisp White)
-C_RESET = "\033[0m"
-C_BOLD = "\033[1m"
-C_DIM = "\033[2m"
-C_GREEN = "\033[1;38;2;0;230;118m"      # ALFi Neon Mint Green
-C_GREEN_DIM = "\033[38;2;0;180;90m"
-C_WHITE = "\033[1;38;2;255;255;255m"    # Crisp White
-C_YELLOW = "\033[1;38;2;255;235;59m"    # Lightning Bolt Yellow
-C_CYAN = "\033[1;38;2;0;229;255m"       # Electric Cyan
-C_ORANGE = "\033[1;38;2;255;152;0m"     # High Mode Amber
-C_RED = "\033[1;38;2;255;82;82m"        # Ultra Mode Crimson
-C_GRAY = "\033[38;2;120;144;156m"       # Slate Gray
-C_BORDER = "\033[38;2;55;71;79m"        # Dark Box Lines
-C_CARD_BG = "\033[48;2;24;32;36m"
+# Terminal capability detection & color palette resolution
+IS_TTY = bool(sys.stdout and hasattr(sys.stdout, "isatty") and sys.stdout.isatty())
+NO_COLOR = bool(os.environ.get("NO_COLOR"))
+PLAIN_MODE = NO_COLOR or not IS_TTY
+
+C_RESET = "" if PLAIN_MODE else "\033[0m"
+C_BOLD = "" if PLAIN_MODE else "\033[1m"
+C_DIM = "" if PLAIN_MODE else "\033[2m"
+C_GREEN = "" if PLAIN_MODE else "\033[1;38;2;0;230;118m"      # ALFi Neon Mint Green
+C_GREEN_DIM = "" if PLAIN_MODE else "\033[38;2;0;180;90m"
+C_WHITE = "" if PLAIN_MODE else "\033[1;38;2;255;255;255m"    # Crisp White
+C_YELLOW = "" if PLAIN_MODE else "\033[1;38;2;255;235;59m"    # Lightning Bolt Yellow
+C_CYAN = "" if PLAIN_MODE else "\033[1;38;2;0;229;255m"       # Electric Cyan
+C_ORANGE = "" if PLAIN_MODE else "\033[1;38;2;255;152;0m"     # High Mode Amber
+C_RED = "" if PLAIN_MODE else "\033[1;38;2;255;82;82m"        # Ultra Mode Crimson
+C_GRAY = "" if PLAIN_MODE else "\033[38;2;120;144;156m"       # Slate Gray
+C_BORDER = "" if PLAIN_MODE else "\033[38;2;55;71;79m"        # Dark Box Lines
+C_CARD_BG = "" if PLAIN_MODE else "\033[48;2;24;32;36m"
+
+def strip_ansi(text: str) -> str:
+    """Strip ANSI escape sequences from text string."""
+    return re.sub(r"\033\[[0-9;]*[a-zA-Z]", "", text)
+
+def vlen(text: str) -> int:
+    """Compute visual column width on terminal, stripping ANSI codes and counting wide characters."""
+    clean = strip_ansi(text)
+    w = 0
+    for ch in clean:
+        w += 2 if unicodedata.east_asian_width(ch) in ("W", "F") else 1
+    return w
+
+def pad_box_line(content: str, width: int = 74, align: str = "left") -> str:
+    """Pad content line to exact visible width inside a box card."""
+    visible = vlen(content)
+    pad_total = max(0, width - 2 - visible)
+    if align == "center":
+        left = pad_total // 2
+        right = pad_total - left
+        return f"{C_BORDER}│{C_RESET}{' ' * left}{content}{' ' * right}{C_BORDER}│{C_RESET}"
+    return f"{C_BORDER}│{C_RESET} {content}{' ' * max(0, pad_total - 1)}{C_BORDER}│{C_RESET}"
+
+def pause(prompt: str = "Press Enter to return to ALFi dashboard..."):
+    """Safely pause for user input without crashing on EOFError or KeyboardInterrupt."""
+    if not IS_TTY:
+        return
+    try:
+        input(f"{C_GRAY}{prompt}{C_RESET}")
+    except (EOFError, KeyboardInterrupt):
+        pass
 
 ACTIONS_MAP = {
     "modes": {
@@ -150,15 +197,16 @@ MENU_ORDER = [
 
 def clear_screen():
     """Clear terminal screen and wipe scrollback buffer for a smooth app-like redraw."""
-    if os.environ.get("NO_COLOR"):
+    if PLAIN_MODE or not IS_TTY:
         return
     try:
         if os.name == "nt":
             os.system("cls")
         else:
-            os.system("clear")
-        sys.stdout.write("\033[H\033[2J\033[3J")
-        sys.stdout.flush()
+            term = os.environ.get("TERM", "")
+            if term and term != "dumb":
+                sys.stdout.write("\033[H\033[2J\033[3J")
+                sys.stdout.flush()
     except Exception:
         pass
 
@@ -218,6 +266,8 @@ def run_wizard_action(
         cmd.extend(extra_args)
 
     env = dict(os.environ)
+    if PLAIN_MODE:
+        env["NO_COLOR"] = "1"
     if serial:
         env["ANDROID_SERIAL"] = serial
 
@@ -229,7 +279,8 @@ def run_wizard_action(
             text=True,
             encoding="utf-8",
             errors="replace",
-            env=env
+            env=env,
+            timeout=300
         )
         if proc.returncode != 0:
             err_box = f"\n{C_RED}╭{'─' * 72}╮{C_RESET}\n"
@@ -238,6 +289,11 @@ def run_wizard_action(
             err_box += proc.stdout
             return False, err_box
         return True, proc.stdout
+    except subprocess.TimeoutExpired:
+        err_box = f"\n{C_RED}╭{'─' * 72}╮{C_RESET}\n"
+        err_box += f"{C_RED}│ ⏱️  ACTION TIMEOUT: Command exceeded 300s limit{' ' * 24}│{C_RESET}\n"
+        err_box += f"{C_RED}╰{'─' * 72}╯{C_RESET}\n"
+        return False, err_box
     except Exception as e:
         err_box = f"\n{C_RED}╭{'─' * 72}╮{C_RESET}\n"
         err_box += f"{C_RED}│ ❌  EXECUTION FAILED: {str(e)[:50]:<48}│{C_RESET}\n"
@@ -253,7 +309,7 @@ def print_banner():
   ██╔══██║██║     ██╔══╝  ██║
   ██║  ██║███████╗██║     ██║
   ╚═╝  ╚═╝╚══════╝╚═╝     ╚═╝{C_RESET}
-  {C_YELLOW}⚡{C_RESET} {C_WHITE}A L F i{C_RESET}  {C_GRAY}—{C_RESET}  {C_GREEN}A N D R O I D   L A G   F I X E R{C_RESET}  {C_GRAY}[v1.2.0]{C_RESET}  {C_YELLOW}⚡{C_RESET}
+  {C_YELLOW}⚡{C_RESET} {C_WHITE}A L F i{C_RESET}  {C_GRAY}—{C_RESET}  {C_GREEN}A N D R O I D   L A G   F I X E R{C_RESET}  {C_GRAY}[v{__version__}]{C_RESET}  {C_YELLOW}⚡{C_RESET}
 """
     print(banner)
 
@@ -277,31 +333,31 @@ def print_device_card(
         is_wireless = ":" in active_serial
         conn_label = "WIRELESS" if is_wireless else "USB"
 
-        line1 = f"  {C_GREEN}●{C_RESET} {C_WHITE}ACTIVE PHONE{C_RESET}  : {brand} {model} ({conn_label})"
-        line2 = f"  {C_CYAN}●{C_RESET} {C_WHITE}PLATFORM{C_RESET}      : Android {android} (SDK {sdk})   {C_GRAY}● Patch: {patch}{C_RESET}"
+        line1 = f" {C_GREEN}●{C_RESET} {C_WHITE}ACTIVE PHONE{C_RESET}  : {brand} {model} ({conn_label})"
+        line2 = f" {C_CYAN}●{C_RESET} {C_WHITE}PLATFORM{C_RESET}      : Android {android} (SDK {sdk})   {C_GRAY}● Patch: {patch}{C_RESET}"
         
         if total_devices > 1:
-            line3 = f"  {C_YELLOW}●{C_RESET} {C_WHITE}TARGET STATUS{C_RESET} : ONLINE ({total_devices} attached)     {C_CYAN}● Switch: [D]{C_RESET}"
+            line3 = f" {C_YELLOW}●{C_RESET} {C_WHITE}TARGET STATUS{C_RESET} : ONLINE ({total_devices} attached)     {C_CYAN}● Switch: [D]{C_RESET}"
         else:
-            line3 = f"  {C_GREEN}●{C_RESET} {C_WHITE}STATUS{C_RESET}        : ONLINE (ADB Authorized)   {C_GRAY}● Mirror: {mirror_label}{C_RESET}"
+            line3 = f" {C_GREEN}●{C_RESET} {C_WHITE}STATUS{C_RESET}        : ONLINE (ADB Authorized)   {C_GRAY}● Mirror: {mirror_label}{C_RESET}"
 
-        print(f"{C_BORDER}│{C_RESET}{line1:<95}{C_BORDER}│{C_RESET}")
-        print(f"{C_BORDER}│{C_RESET}{line2:<105}{C_BORDER}│{C_RESET}")
-        print(f"{C_BORDER}│{C_RESET}{line3:<105}{C_BORDER}│{C_RESET}")
+        print(pad_box_line(line1, width))
+        print(pad_box_line(line2, width))
+        print(pad_box_line(line3, width))
     elif total_devices > 0:
-        line1 = f"  {C_YELLOW}⚠️  HARDWARE{C_RESET}     : {total_devices} DEVICE(S) DETECTED (UNAUTHORIZED)"
-        line2 = f"  {C_WHITE}💡 ACTION NEEDED{C_RESET} : Unlock phone screen and tap 'Always allow from this computer'"
-        line3 = f"  {C_GRAY}● STATUS{C_RESET}        : WAITING FOR RSA KEY       {C_CYAN}● Manage: [D]{C_RESET}"
-        print(f"{C_BORDER}│{C_RESET}{line1:<95}{C_BORDER}│{C_RESET}")
-        print(f"{C_BORDER}│{C_RESET}{line2:<95}{C_BORDER}│{C_RESET}")
-        print(f"{C_BORDER}│{C_RESET}{line3:<105}{C_BORDER}│{C_RESET}")
+        line1 = f" {C_YELLOW}⚠️  HARDWARE{C_RESET}     : {total_devices} DEVICE(S) DETECTED (UNAUTHORIZED)"
+        line2 = f" {C_WHITE}💡 ACTION NEEDED{C_RESET} : Unlock phone screen and tap 'Always allow from this computer'"
+        line3 = f" {C_GRAY}● STATUS{C_RESET}        : WAITING FOR RSA KEY       {C_CYAN}● Manage: [D]{C_RESET}"
+        print(pad_box_line(line1, width))
+        print(pad_box_line(line2, width))
+        print(pad_box_line(line3, width))
     else:
-        line1 = f"  {C_YELLOW}○{C_RESET} {C_WHITE}HARDWARE{C_RESET}      : NO PHYSICAL DEVICE CONNECTED (Simulator / Headless)"
-        line2 = f"  {C_CYAN}💡 TIP{C_RESET}           : Plug in USB cable or connect via Wireless Debugging [D]"
-        line3 = f"  {C_GRAY}●{C_RESET} {C_WHITE}STATUS{C_RESET}        : STANDBY                   {C_GRAY}● Mirror: {mirror_label}{C_RESET}"
-        print(f"{C_BORDER}│{C_RESET}{line1:<84}{C_BORDER}│{C_RESET}")
-        print(f"{C_BORDER}│{C_RESET}{line2:<84}{C_BORDER}│{C_RESET}")
-        print(f"{C_BORDER}│{C_RESET}{line3:<105}{C_BORDER}│{C_RESET}")
+        line1 = f" {C_YELLOW}○{C_RESET} {C_WHITE}HARDWARE{C_RESET}      : NO PHYSICAL DEVICE CONNECTED (Simulator / Headless)"
+        line2 = f" {C_CYAN}💡 TIP{C_RESET}           : Plug in USB cable or connect via Wireless Debugging [D]"
+        line3 = f" {C_GRAY}●{C_RESET} {C_WHITE}STATUS{C_RESET}        : STANDBY                   {C_GRAY}● Mirror: {mirror_label}{C_RESET}"
+        print(pad_box_line(line1, width))
+        print(pad_box_line(line2, width))
+        print(pad_box_line(line3, width))
     print(f"{C_BORDER}╰{'─' * (width - 2)}╯{C_RESET}")
 
 def print_menu(total_devices: int = 0):
@@ -444,7 +500,7 @@ def prompt_device_selection(
                 print(f"[*] Connecting to {ip_port}...")
                 ok, out = run_adb(["connect", ip_port])
                 print(f"[*] Result: {out}")
-                input(f"\n{C_GRAY}Press Enter to refresh devices...{C_RESET}")
+                pause("Press Enter to refresh devices...")
                 continue
             except (KeyboardInterrupt, EOFError):
                 continue
@@ -458,7 +514,7 @@ def prompt_device_selection(
                     print(f"\n{C_RED}⚠️ Cannot select this device: Status is '{target_dev['status']}'.{C_RESET}")
                     if target_dev["status"] == "unauthorized":
                         print("👉 Please unlock your phone and tap 'Allow USB debugging' on the popup first.")
-                    input(f"\n{C_GRAY}Press Enter to continue...{C_RESET}")
+                    pause("Press Enter to continue...")
                     continue
 
                 chosen_serial = target_dev["serial"]
@@ -471,10 +527,10 @@ def prompt_device_selection(
                 return chosen_serial, info
             else:
                 print(f"\n{C_RED}⚠️ Invalid device number.{C_RESET}")
-                input(f"{C_GRAY}Press Enter to try again...{C_RESET}")
+                pause("Press Enter to try again...")
         except ValueError:
             print(f"\n{C_RED}⚠️ Invalid option. Enter device number, R, W, or 0.{C_RESET}")
-            input(f"{C_GRAY}Press Enter to try again...{C_RESET}")
+            pause("Press Enter to try again...")
 
 def prompt_mode_selection(dry_run: bool = False, serial: Optional[str] = None) -> Tuple[bool, str]:
     """Display modern ALFi 4-Tier Visual Selection Deck."""
@@ -483,7 +539,7 @@ def prompt_mode_selection(dry_run: bool = False, serial: Optional[str] = None) -
     width = 74
     print(f"\n{C_BORDER}╭{'─' * (width - 2)}╮{C_RESET}")
     title = f"{C_YELLOW}⚡{C_RESET} {C_WHITE}CHOOSE OPTIMIZATION ARCHITECTURE{C_RESET} {C_YELLOW}⚡{C_RESET}"
-    print(f"{C_BORDER}│{C_RESET}{title:^90}{C_BORDER}│{C_RESET}")
+    print(pad_box_line(title, width, align="center"))
     print(f"{C_BORDER}╰{'─' * (width - 2)}╯{C_RESET}\n")
 
     print(f"  {C_GREEN}[ 1 ] 🟢 LOW MODE{C_RESET} ─────── {C_WHITE}SAFE BASELINE (Zero Risk){C_RESET}")
@@ -587,11 +643,12 @@ def main():
                 extra_args.append("--force-ultra")
         ok, output = run_wizard_action(args.action, dry_run=args.dry_run, extra_args=extra_args, serial=active_serial)
         if args.json:
+            clean_output = strip_ansi(output).strip()
             print(json.dumps({
                 "action": args.action,
                 "success": ok,
                 "dry_run": args.dry_run,
-                "output": output
+                "output": clean_output
             }, indent=2))
         else:
             print(output)
@@ -639,7 +696,7 @@ def main():
         if choice.upper() == "S":
             ok, msg = launch_scrcpy(serial=active_serial)
             print(f"\n[*] {msg}\n")
-            input(f"{C_GRAY}Press Enter to return to dashboard...{C_RESET}")
+            pause("Press Enter to return to dashboard...")
             continue
 
         selected_key = None
@@ -650,7 +707,7 @@ def main():
 
         if not selected_key:
             print(f"\n{C_RED}⚠️ Invalid choice. Please enter a valid action number [0-{len(MENU_ORDER)}], D, or S.{C_RESET}\n")
-            input(f"{C_GRAY}Press Enter to continue...{C_RESET}")
+            pause("Press Enter to continue...")
             continue
 
         if selected_key == "modes":
@@ -666,7 +723,7 @@ def main():
             print(out)
 
         print(f"\n{C_BORDER}{'─' * 74}{C_RESET}")
-        input(f"{C_GRAY}Press Enter to return to ALFi dashboard...{C_RESET}")
+        pause("Press Enter to return to ALFi dashboard...")
 
 if __name__ == "__main__":
     main()
