@@ -121,3 +121,22 @@ python scripts/restore.py --manifest latest
 # Or restore a specific package:
 python scripts/restore.py --package com.example.app
 ```
+
+### Phase 10: Emergency Feature Rescue & On-Device Shizuku Runner
+If any device feature is restricted, broken, or misbehaving:
+```bash
+# Automatically scan & revive critical system packages (SystemUI, Settings, Dialer, WebView, GMS):
+python scripts/rescue.py --fix-critical
+
+# Deep multi-layer package rescue (enable, reinstall, AppOps allow, Standby active, ART reset):
+python scripts/rescue.py --rescue-package com.google.android.dialer
+
+# Re-enable all disabled packages:
+python scripts/rescue.py --restore-all-disabled
+
+# Hardware Safe Mode recovery guide (when stuck in bootloop):
+python scripts/rescue.py --guide samsung
+
+# Export standalone on-device Shizuku (rish) optimization & rollback shell scripts:
+python scripts/export_shizuku.py --profile all
+```

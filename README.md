@@ -111,13 +111,17 @@ android-lag-fixer/
 │   ├── restore.py                           # 1-click restore from manifest or package name
 │   ├── compile_speed.py                     # ART AOT pre-compilation & reset point engine
 │   ├── appops_restrict.py                   # AppOps background execution limits & standby bucket manager
+│   ├── rescue.py                            # Emergency feature recovery & hardware safe mode rescue engine
+│   ├── export_shizuku.py                    # On-device Shizuku / rish shell & paired rollback exporter
 │   ├── tweak_ui.py                          # 2x animation scaling & system cache trimmer
 │   └── device_tracker.py                    # Hardware serial fingerprinting & multi-device audit vault
 │
 ├── tests/
 │   ├── test_operations.py                   # Automated unit tests for package mutations
 │   ├── test_compile_speed.py                # Mocked tests for ART compilation & reset points
-│   └── test_appops_restrict.py              # Mocked tests for AppOps limits & standby buckets
+│   ├── test_appops_restrict.py              # Mocked tests for AppOps limits & standby buckets
+│   ├── test_rescue.py                       # Mocked tests for emergency feature rescue & recovery
+│   └── test_export_shizuku.py               # Mocked tests for Shizuku & rollback shell exporter
 │
 └── references/
     ├── connection_guide.md                  # USB drivers, developer settings, wireless debugging
@@ -262,6 +266,44 @@ python scripts/bench.py --app com.android.settings --duration 8 --save after.jso
 # Compare before vs after:
 python scripts/bench.py --compare before.json after.json
 ```
+
+#### 7. On-Device Shizuku & Rish Script Export (Phase 3)
+For running optimizations or rollbacks directly on your phone without a PC connected (using Shizuku + Termux):
+
+```bash
+# Export matched optimization and rollback scripts for your OEM:
+python scripts/export_shizuku.py --profile samsung
+# (Supports: samsung, xiaomi, realme, google, social, all)
+
+# Run on phone via Termux:
+# 1. Start Shizuku via Wireless Debugging
+# 2. In Termux, run: rish apply_optimization_samsung_TIMESTAMP.sh
+# 3. 1-Click Rollback on phone: rish rollback_optimization_samsung_TIMESTAMP.sh
+```
+
+---
+
+### 🆘 Emergency Feature Rescue & Hardware Safe Mode Engine (Phase 3)
+
+If any phone feature is restricted, broken, or misbehaving (e.g. Phone dialer, Google Play Services, Settings, Camera, SystemUI, Keyguard, or WebView):
+
+```bash
+# 1. Scan and instantly revive any disabled critical core components:
+python scripts/rescue.py --fix-critical
+
+# 2. Deep multi-layer rescue for a specific package (enables, reinstalls, resets AppOps, bucket & ART):
+python scripts/rescue.py --rescue-package com.google.android.dialer
+
+# 3. Re-enable all currently disabled packages across the user profile:
+python scripts/rescue.py --restore-all-disabled
+
+# 4. View all historical reset points and backup manifests:
+python scripts/rescue.py --list-manifests
+
+# 5. Display OEM-specific hardware Safe Mode / bootloop recovery key combinations:
+python scripts/rescue.py --guide samsung    # Options: samsung, xiaomi, google, realme_oneplus, general
+```
+*(Every rescue operation automatically captures a pre-flight snapshot in `backups/rescue_snapshot_*.json` and logs the event to your local PC device vault).*
 
 ---
 
