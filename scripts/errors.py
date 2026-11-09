@@ -9,6 +9,11 @@ human-readable diagnoses paired with specific next-step remediation commands.
 import sys
 from typing import Optional, Dict, Any
 
+if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if sys.stderr and hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 class LagFixerError(Exception):
     """Base exception for all lag-fixer errors."""
     def __init__(self, message: str, remediation: str = "", code: str = "ERR_GENERAL"):
