@@ -90,6 +90,47 @@ alfi-modes --mode medium
 
 ---
 
+## One command for everything
+
+Every capability is reachable as `alfi <command>`, so nothing needs a separate
+script name or a remembered path.
+
+```bash
+alfi                        # interactive dashboard
+alfi status                 # one line: device, Android, transport, battery
+alfi modes --mode low       # pre-flight -> confirm -> apply
+alfi bench --app com.android.settings
+alfi doze --clean
+alfi restore --manifest latest
+```
+
+| Group | Commands |
+| --- | --- |
+| Core | `status`, `devices`, `tui` |
+| Optimise | `modes`, `optimize`, `ui`, `compile`, `appops`, `doze` |
+| Measure | `diagnose`, `bench`, `power`, `audit`, `vault` |
+| Recover | `restore`, `rescue`, `shizuku` |
+| Maintain | `update`, `config` |
+
+Flags pass straight through to the underlying engine, so `--dry-run`, `--json`,
+`--yes`, `--user` and `--device` behave the same everywhere.
+
+### Saved defaults
+
+Set once, stop repeating flags:
+
+```bash
+alfi config set mode medium     # `alfi modes` now defaults to Medium
+alfi config set device 192.168.1.42:5555
+alfi config set color never     # plain output, no escapes
+alfi config                      # show current defaults
+alfi config path                 # ~/.config/alfi/config.json
+```
+
+Defaults live in one JSON file (`$ALFI_CONFIG`, else `$XDG_CONFIG_HOME/alfi/config.json`,
+else `~/.config/alfi/config.json`) and are applied as environment variables and
+injected flags — never as hidden behaviour. An explicit flag always wins.
+
 ## Terminal UI
 
 ALFi renders its interface from a small standard-library layer in `scripts/ui/`, so the

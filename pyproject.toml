@@ -36,7 +36,7 @@ classifiers = [
 dependencies = []
 
 [project.scripts]
-alfi = "scripts.wizard:main"
+alfi = "scripts.cli:main"
 alfi-wizard = "scripts.wizard:main"
 alfi-modes = "scripts.modes:main"
 alfi-power = "scripts.power_audit:main"
@@ -45,7 +45,7 @@ alfi-rescue = "scripts.rescue:main"
 alfi-bench = "scripts.bench:main"
 alfi-shizuku = "scripts.export_shizuku:main"
 alfi-update = "scripts.update_database:main"
-lagfixer = "scripts.wizard:main"
+lagfixer = "scripts.cli:main"
 lagfixer-wizard = "scripts.wizard:main"
 lagfixer-modes = "scripts.modes:main"
 lagfixer-power = "scripts.power_audit:main"
