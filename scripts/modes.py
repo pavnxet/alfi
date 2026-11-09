@@ -384,48 +384,45 @@ def print_preflight_report(
     target_social: List[str],
     target_compile: List[str]
 ):
-    """Render a clean modern card previewing the optimization plan before execution."""
+    """Render the pre-flight plan card. Uses the shared widgets so borders align."""
+    from ui import ui as _ui_factory
+
+    u = _ui_factory()
+    t = u.theme
     cfg = plan["config"]
     approved_pkgs = plan["approved_packages"]
-    width = 74
 
-    C_BORDER = "\033[38;2;55;71;79m"
-    C_WHITE = "\033[1;38;2;255;255;255m"
-    C_GREEN = "\033[1;38;2;0;230;118m"
-    C_YELLOW = "\033[1;38;2;255;235;59m"
-    C_CYAN = "\033[1;38;2;0;229;255m"
-    C_GRAY = "\033[38;2;120;144;156m"
-    C_RESET = "\033[0m"
+    brand = str(device_info.get("brand", "Generic")).upper()
+    model = str(device_info.get("model", "Device"))
+    android_ver = str(device_info.get("android_version", "?"))
+    sdk = str(device_info.get("sdk_level", "?"))
 
-    brand = device_info.get("brand", "Generic").upper()
-    model = device_info.get("model", "Device")
-    android_ver = device_info.get("android_version", "?")
-    sdk = device_info.get("sdk_level", "?")
-
-    print(f"\n{C_BORDER}╭{'─' * (width - 2)}╮{C_RESET}")
-    title = f"{C_YELLOW}📋{C_RESET} {C_WHITE}PRE-FLIGHT OPTIMIZATION AUDIT REPORT : [{cfg['emoji']} {cfg['label'].upper()}]{C_RESET}"
-    print(f"{C_BORDER}│{C_RESET}  {title:<90}{C_BORDER}│{C_RESET}")
-    print(f"{C_BORDER}╰{'─' * (width - 2)}╯{C_RESET}\n")
-
-    print(f"  {C_CYAN}• Target Device      :{C_RESET} {C_WHITE}{brand} {model}{C_RESET} (Android {android_ver}, SDK {sdk})")
-    print(f"  {C_GREEN}• Debloat Candidates :{C_RESET} {len(approved_pkgs)} bloatware & telemetry packages identified")
+    rows = []
+    rows.append(t.paint("target   ", "muted") + ": " + t.paint(brand + " " + model, "title")
+                + " (Android " + android_ver + ", SDK " + sdk + ")")
+    rows.append(t.paint("debloat  ", "muted") + ": " + str(len(approved_pkgs))
+                + " packages identified  " + u.badge(str(cfg["label"]).split("(")[0].strip().upper()))
     if target_social:
         names = []
         for p in target_social[:3]:
             parts = p.split(".")
-            name = parts[-2].capitalize() if parts[-1].lower() in ["android", "app", "service"] and len(parts) > 2 else parts[-1].capitalize()
+            name = parts[-2].capitalize() if parts[-1].lower() in ("android", "app", "service") and len(parts) > 2 else parts[-1].capitalize()
             names.append(name)
-        hog_names = ", ".join(names)
-        extra = f" (+{len(target_social)-3} more)" if len(target_social) > 3 else ""
-        print(f"  {C_YELLOW}• AppOps Restrictions:{C_RESET} {len(target_social)} background hogs ({hog_names}{extra})")
+        extra = " (+" + str(len(target_social) - 3) + " more)" if len(target_social) > 3 else ""
+        rows.append(t.paint("appops   ", "muted") + ": " + str(len(target_social))
+                    + " background hogs (" + ", ".join(names) + extra + ")")
     else:
-        print(f"  {C_GRAY}• AppOps Restrictions:{C_RESET} None installed")
-    print(f"  {C_CYAN}• UI Animation Scale :{C_RESET} Set to {cfg['animation_scale']}x (2x snappier gesture response)")
-    print(f"  {C_WHITE}• Cache Maintenance  :{C_RESET} Trim stale system caches without data loss")
+        rows.append(t.paint("appops   ", "muted") + ": none installed")
+    rows.append(t.paint("animation", "muted") + ": " + str(cfg["animation_scale"]) + "x")
+    rows.append(t.paint("cache    ", "muted") + ": trim stale system caches (no user data)")
     if target_compile:
-        print(f"  {C_GREEN}• ART Pre-Compile    :{C_RESET} Speed-profile AOT compilation on {len(target_compile)} top apps")
-    print(f"  {C_GRAY}• Rollback Safety Net:{C_RESET} Snapshot manifest written & fsynced before first mutation")
-    print(f"{C_BORDER}{'─' * width}{C_RESET}")
+        rows.append(t.paint("art      ", "muted") + ": speed-profile on "
+                    + str(len(target_compile)) + " top apps")
+    rows.append(t.paint("rollback ", "muted") + ": " + t.paint("snapshot written and fsynced before the first mutation", "ok"))
+
+    u.print("")
+    u.print(u.box(rows, title="PRE-FLIGHT AUDIT: " + cfg["label"].upper()))
+
 
 def confirm_preflight_plan(
     plan: Dict[str, Any],
@@ -436,24 +433,20 @@ def confirm_preflight_plan(
     """Show pre-flight report and ask user for confirmation before mutating device."""
     print_preflight_report(plan, device_info, target_social, target_compile)
 
-    C_BORDER = "\033[38;2;55;71;79m"
-    C_GREEN = "\033[1;38;2;0;230;118m"
-    C_CYAN = "\033[1;38;2;0;229;255m"
-    C_GRAY = "\033[38;2;120;144;156m"
-    C_YELLOW = "\033[1;38;2;255;235;59m"
-    C_RED = "\033[1;38;2;255;82;82m"
-    C_RESET = "\033[0m"
+    from ui import ui as _ui_factory
 
-    print(f"\n  {C_GREEN}[ Y ]{C_RESET} ✅ Confirm and Apply Optimization")
-    print(f"  {C_CYAN}[ D ]{C_RESET} 🔍 View Detailed Package List (Names & Explanations)")
-    print(f"  {C_GRAY}[ N ]{C_RESET} 🚪 Cancel and Return to Menu (No changes made)")
-    print(f"{C_BORDER}{'─' * 74}{C_RESET}")
+    u = _ui_factory()
+    t = u.theme
+    u.print(t.paint(" [Y]", "ok") + " apply   "
+            + t.paint("[D]", "info") + " details   "
+            + t.paint("[N]", "muted") + " cancel, no changes")
+    u.print(u.rule())
 
     while True:
         try:
-            choice = input(f"\n{C_GREEN}👉 Proceed with optimization? [Y/d/n]: {C_RESET}").strip()
+            choice = input(t.paint("Proceed with optimization? [Y/d/n]: ", "ok")).strip()
         except (KeyboardInterrupt, EOFError):
-            print(f"\n{C_RED}⚠️ Operation cancelled by user. Zero changes made.{C_RESET}")
+            u.print(t.paint("Operation cancelled by user. Zero changes made.", "danger"))
             return False
 
         if choice.lower() in ["y", "yes", ""]:
@@ -461,26 +454,30 @@ def confirm_preflight_plan(
         elif choice.lower() in ["d", "details"]:
             approved = plan["approved_packages"]
             metadata = plan.get("package_metadata", {})
-            print(f"\n{C_CYAN}📦 PACKAGES IDENTIFIED FOR OPTIMIZATION ({len(approved)}):{C_RESET}")
+            rows = []
             if not approved:
-                print(f"  {C_GRAY}(No debloat packages found installed for this mode tier){C_RESET}")
-            for pkg in approved:
+                rows.append(t.paint("no debloat packages found for this mode tier", "muted"))
+            for pkg in approved[:12]:
                 meta = metadata.get(pkg, {})
                 name = meta.get("name", pkg)
-                desc = meta.get("description", "Identified by community debloat database.")
-                print(f"  • {C_GREEN}{pkg}{C_RESET}")
-                print(f"    {C_GRAY}└─ {name}: {desc}{C_RESET}")
+                desc = meta.get("description", "identified by the community debloat database")
+                tier = meta.get("tier", "")
+                head = t.paint(pkg, "ok") + ("  " + u.badge(tier) if tier else "")
+                rows.append(head)
+                rows.append(t.paint("  " + str(name) + ": " + str(desc), "muted"))
+            if len(approved) > 12:
+                rows.append(t.paint("  (+" + str(len(approved) - 12) + " more, see the manifest after applying)", "muted"))
+            u.print("")
+            u.print(u.box(rows, title="PACKAGES TO DISABLE (" + str(len(approved)) + ")"))
             if target_social:
-                print(f"\n{C_YELLOW}🛡️ APPOPS BACKGROUND LIMITS ({len(target_social)}):{C_RESET}")
-                for p in target_social:
-                    print(f"  • {C_YELLOW}{p}{C_RESET} (Freeze background CPU upon minimizing)")
-            print(f"\n{C_BORDER}{'─' * 74}{C_RESET}")
-            print(f"  {C_GREEN}[ Y ] Confirm & Apply{C_RESET}  |  {C_GRAY}[ N ] Cancel{C_RESET}")
+                rows2 = [t.paint(p, "warn") + "  freeze background CPU when minimised" for p in target_social]
+                u.print(u.box(rows2, title="APPOPS RESTRICTIONS (" + str(len(target_social)) + ")"))
+            u.print(t.paint(" [Y] confirm and apply   [N] cancel", "muted"))
         elif choice.lower() in ["n", "no", "cancel", "c", "0"]:
-            print(f"\n{C_RED}⚠️ Optimization cancelled. No changes were made to your device.{C_RESET}")
+            u.print(t.paint("Optimization cancelled. No changes were made to your device.", "danger"))
             return False
         else:
-            print(f"{C_RED}Please type 'Y' to proceed, 'D' to inspect packages, or 'N' to cancel.{C_RESET}")
+            u.print(t.paint("Please type 'Y' to proceed, 'D' to inspect packages, or 'N' to cancel.", "danger"))
 
 def execute_mode_optimization(
     mode: str,
@@ -594,7 +591,11 @@ def execute_mode_optimization(
             os.fsync(f.fileno())
         print(f"[*] Pre-flight restore snapshot secured at: {manifest_path}")
 
-        for pkg in approved_pkgs:
+        from ui import ui as _ui_factory
+        u = _ui_factory()
+        total_pkgs = len(approved_pkgs)
+        live_bar = u.caps.is_tty and not dry_run
+        for idx, pkg in enumerate(approved_pkgs, 1):
             if dry_run:
                 print(f"    [DRY-RUN] Would disable: {pkg}")
                 results["packages_disabled"].append(pkg)
@@ -602,13 +603,22 @@ def execute_mode_optimization(
             else:
                 ok, msg = apply_package_state(pkg, want="disabled", serial=serial, dry_run=False)
                 if ok:
-                    print(f"    ✅ Disabled: {pkg}")
+                    if not live_bar:
+                        print(f"    {u.theme.paint(u.glyph['ok'], 'ok')} disabled: {pkg}")
                     results["packages_disabled"].append(pkg)
                     manifest_data["packages"][pkg]["status"] = "applied"
                 else:
-                    print(f"    ⚠️ Failed {pkg}: {msg}")
+                    if not live_bar:
+                        print(f"    {u.theme.paint(u.glyph['warn'], 'warn')} failed {pkg}: {msg}")
                     results["packages_failed"].append({"package": pkg, "error": msg})
                     manifest_data["packages"][pkg]["status"] = f"failed: {msg}"
+            if live_bar:
+                sys.stdout.write("\r" + u.progress(idx, total_pkgs, label=pkg))
+                sys.stdout.flush()
+
+        if live_bar:
+            sys.stdout.write("\n")
+            sys.stdout.flush()
 
         # Update manifest on disk with final execution outcomes
         try:
@@ -701,7 +711,21 @@ def execute_mode_optimization(
     except Exception:
         pass
 
-    print(f"\n✅ Mode [{cfg['emoji']} {cfg['name']}] optimization complete!")
+    _summary = _ui_factory().box([
+        _ui_factory().theme.paint("mode      ", "muted") + ": " + str(cfg["label"])
+        + ("  (DRY RUN, nothing was changed)" if dry_run else ""),
+        _ui_factory().theme.paint("disabled  ", "muted") + ": " + str(len(results["packages_disabled"]))
+        + "   " + _ui_factory().theme.paint("failed", "muted") + ": " + str(len(results["packages_failed"])),
+        _ui_factory().theme.paint("appops    ", "muted") + ": " + str(len(results["appops_applied"]))
+        + "   " + _ui_factory().theme.paint("art", "muted") + ": " + str(len(results["art_compiled"])),
+        _ui_factory().theme.paint("manifest  ", "muted") + ": "
+        + (os.path.basename(manifest_path) if approved_pkgs else "none")
+        + _ui_factory().theme.paint("  (backups/)", "muted"),
+        _ui_factory().theme.paint("undo      ", "muted") + ": " + _ui_factory().theme.paint(
+            "python scripts/restore.py --manifest latest", "ok"),
+    ], title="SESSION SUMMARY")
+    _ui_factory().print("")
+    _ui_factory().print(_summary)
     return results
 
 def main():
