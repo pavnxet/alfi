@@ -12,7 +12,7 @@ import os
 import time
 import json
 import argparse
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 
 if sys.stdout and hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -24,6 +24,25 @@ if SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, SCRIPTS_DIR)
 
 from connect import run_adb, get_connected_devices, get_device_info
+
+def get_screen_dimensions(target_serial: Optional[str] = None) -> Tuple[int, int]:
+    """Retrieve physical or override screen width and height via wm size (default fallback: 1080x2400)."""
+    prefix = ["-s", target_serial] if target_serial else []
+    ok, out = run_adb(prefix + ["shell", "wm size"], timeout=5)
+    if ok and out:
+        import re
+        # Check override size first (user scaling), then physical size
+        match = re.search(r"Override size:\s*(\d+)x(\d+)", out)
+        if not match:
+            match = re.search(r"Physical size:\s*(\d+)x(\d+)", out)
+        if match:
+            try:
+                w, h = int(match.group(1)), int(match.group(2))
+                if w > 0 and h > 0:
+                    return w, h
+            except (ValueError, TypeError):
+                pass
+    return 1080, 2400
 
 def get_display_refresh_rate(target_serial: Optional[str] = None) -> float:
     """Detect display peak refresh rate in Hz (e.g. 60, 90, 120, 144) via system settings or dumpsys."""
@@ -157,21 +176,28 @@ def run_jank_benchmark(
     """
     prefix = ["-s", target_serial] if target_serial else []
 
-    # 1. Ensure app is running in foreground
+    # 1. Wake screen and ensure app is running in foreground
+    run_adb(prefix + ["shell", "input keyevent KEYCODE_WAKEUP"], timeout=5)
+    run_adb(prefix + ["shell", "wm dismiss-keyguard"], timeout=5)
     run_adb(prefix + ["shell", f"monkey -p {pkg} -c android.intent.category.LAUNCHER 1"], timeout=5)
     time.sleep(1.5)
 
     # 2. Reset graphics buffers
     run_adb(prefix + ["shell", f"dumpsys gfxinfo {pkg} reset"], timeout=5)
 
-    # 3. Workload window (optionally drive automated scrolling for repeatable benchmarks)
+    # 3. Workload window (dynamically calculate center swipe coordinates from physical screen dimensions)
+    width, height = get_screen_dimensions(target_serial)
+    cx = width // 2
+    y_start = max(int(height * 0.75), 100)
+    y_end = max(int(height * 0.25), 50)
+
     start_time = time.time()
     if simulate_scroll:
-        # Perform 3 consistent vertical swipes
+        # Perform 3 consistent vertical swipes adapting to screen resolution
         for _ in range(3):
-            run_adb(prefix + ["shell", "input swipe 500 1400 500 400 350"])
+            run_adb(prefix + ["shell", f"input swipe {cx} {y_start} {cx} {y_end} 350"])
             time.sleep(1.0)
-            run_adb(prefix + ["shell", "input swipe 500 400 500 1400 350"])
+            run_adb(prefix + ["shell", f"input swipe {cx} {y_end} {cx} {y_start} 350"])
             time.sleep(1.0)
     else:
         # Allow user to scroll or wait for interaction
@@ -191,9 +217,9 @@ def run_jank_benchmark(
         # Stationary screen fallback: trigger automated touch scroll to collect real frame data
         print("    ℹ️ Static screen detected; performing automated hardware scroll passes...")
         for _ in range(3):
-            run_adb(prefix + ["shell", "input swipe 500 1400 500 400 350"])
+            run_adb(prefix + ["shell", f"input swipe {cx} {y_start} {cx} {y_end} 350"])
             time.sleep(0.8)
-            run_adb(prefix + ["shell", "input swipe 500 400 500 1400 350"])
+            run_adb(prefix + ["shell", f"input swipe {cx} {y_end} {cx} {y_start} 350"])
             time.sleep(0.8)
         ok2, out2 = run_adb(prefix + ["shell", f"dumpsys gfxinfo {pkg} framestats"], timeout=10)
         if ok2 and out2:
