@@ -646,6 +646,27 @@ def execute_mode_optimization(
                     else:
                         print(f"    ℹ️ Compilation notice for {p}: {msg}")
 
+    # Step 6: Multi-Device Audit Vault Logging
+    try:
+        from device_tracker import get_device_fingerprint, log_device_action, save_device_profile
+        fp = get_device_fingerprint(serial)
+        save_device_profile(fp)
+        log_device_action(
+            fp["device_slug"],
+            f"mode_optimization_{mode}",
+            f"Applied Mode [{cfg['emoji']} {cfg['label']}]",
+            {
+                "mode": mode,
+                "packages_disabled": results["packages_disabled"],
+                "appops_applied": results["appops_applied"],
+                "art_compiled": results["art_compiled"],
+                "animation_scale": cfg["animation_scale"],
+                "manifest_path": manifest_path if approved_pkgs else None
+            }
+        )
+    except Exception:
+        pass
+
     print(f"\n✅ Mode [{cfg['emoji']} {cfg['name']}] optimization complete!")
     return results
 
