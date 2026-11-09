@@ -15,6 +15,7 @@ DEFAULTS = {
     "mode": None,       # default --mode for `alfi modes`
     "color": "auto",    # auto | always | never
     "ascii": False,     # force ASCII glyphs
+    "theme": "neon",    # neon | amber | mono
     "user": 0,          # default Android user profile
 }
 
@@ -84,6 +85,8 @@ def apply_to_env(data):
         os.environ["ANDROID_SERIAL"] = str(data["device"])
     if data.get("ascii"):
         os.environ["ALFI_ASCII"] = "1"
+    if data.get("theme"):
+        os.environ["ALFI_THEME"] = str(data["theme"])
     if data.get("color") == "never":
         os.environ["NO_COLOR"] = "1"
     elif data.get("color") == "always":

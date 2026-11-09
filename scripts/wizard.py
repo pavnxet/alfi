@@ -52,6 +52,7 @@ except ImportError:
         __version__ = "1.2.0"
 
 from ui import ui as _ui_factory
+from ui.widgets import gauge
 
 from connect import run_adb, get_connected_devices, get_device_info
 from device_tracker import get_device_fingerprint
@@ -378,6 +379,34 @@ def print_device_card(
     u.print(u.box(rows, title="DEVICE"))
 
 
+def print_stats_strip(active_serial: Optional[str] = None):
+    """Compact live gauges under the device card: battery, memory, swap/zram."""
+    if not active_serial:
+        return
+    try:
+        import monitor
+        snap = monitor.snapshot(active_serial)
+    except Exception:
+        return
+    if "error" in snap:
+        return
+
+    u = get_ui()
+    t = u.theme
+    cells = []
+    if snap.get("battery") is not None:
+        cells.append(gauge(snap["battery"], 100, width=10, theme=t, label="BATT",
+                           unit=("%.0fC" % snap["temp_c"]) if snap.get("temp_c") else ""))
+    cells.append(gauge(snap.get("mem_used_gb", 0), snap.get("mem_total_gb") or 1, width=10,
+                       theme=t, label="RAM", unit="%.1f/%.1fG" % (snap.get("mem_used_gb", 0), snap.get("mem_total_gb", 0))))
+    if snap.get("swap_total_gb"):
+        cells.append(gauge(snap.get("swap_used_gb", 0), snap.get("swap_total_gb") or 1, width=10,
+                           theme=t, label="ZRAM", unit="%.1f/%.1fG" % (snap.get("swap_used_gb", 0), snap.get("swap_total_gb", 0))))
+    if not cells:
+        return
+    u.print(u.box(cells, title="LIVE"))
+
+
 def print_menu(total_devices: int = 0):
     """Render the dashboard decks. Width is adaptive; rows never overflow the box."""
     u = get_ui()
@@ -691,6 +720,7 @@ def main():
         clear_screen()
         print_banner()
         print_device_card(device_info, total_devices=len(devices), active_serial=active_serial)
+        print_stats_strip(active_serial)
         print_menu(total_devices=len(devices))
 
         try:

@@ -106,7 +106,7 @@ alfi restore --manifest latest
 
 | Group | Commands |
 | --- | --- |
-| Core | `status`, `devices`, `tui` |
+| Core | `status`, `watch`, `devices`, `tui` |
 | Optimise | `modes`, `optimize`, `ui`, `compile`, `appops`, `doze` |
 | Measure | `diagnose`, `bench`, `power`, `audit`, `vault` |
 | Recover | `restore`, `rescue`, `shizuku` |
@@ -114,6 +114,29 @@ alfi restore --manifest latest
 
 Flags pass straight through to the underlying engine, so `--dry-run`, `--json`,
 `--yes`, `--user` and `--device` behave the same everywhere.
+
+### Live monitor
+
+```bash
+alfi watch                 # redraws every 1.5s: CPU, memory, swap/zram, battery, top process
+alfi watch --interval 3    # slower refresh
+alfi watch --json          # one snapshot as JSON, then exit (script-friendly)
+```
+
+In a terminal it is a full-screen panel with block meters and a CPU sparkline;
+piped or redirected it prints one snapshot and exits, so it never loops in a
+log or CI job.
+
+### Themes and glyphs
+
+```bash
+alfi config set theme amber   # neon (default) | amber | mono
+alfi config set ascii true    # ASCII borders and icons instead of unicode
+alfi config set color never   # no escape sequences at all
+```
+
+The palette is resolved once per process (`ALFI_THEME`, `ALFI_ASCII`, `NO_COLOR`),
+so every screen — dashboard, pre-flight card, monitor — follows it.
 
 ### Saved defaults
 

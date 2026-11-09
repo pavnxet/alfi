@@ -25,6 +25,7 @@ import config
 COMMANDS = {
     "tui": "wizard",
     "status": None,
+    "watch": "monitor",
     "devices": "connect",
     "modes": "modes",
     "optimize": "optimize",
@@ -48,6 +49,7 @@ HELP = """usage: alfi [command] [options]
 
   alfi                       interactive dashboard (default)
   alfi status                one-line device status
+  alfi watch                 live CPU / memory / swap / battery monitor
   alfi devices               list attached devices and pairing help
 
   alfi modes   [--mode low|medium|high|ultra] [--dry-run] [--yes]

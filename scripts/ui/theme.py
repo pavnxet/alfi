@@ -36,6 +36,38 @@ _X256 = {
     "dim": "2",
 }
 
+# Truecolor palettes. `neon` is the original identity; the others are one-line
+# alternatives selectable with ALFI_THEME or `alfi config set theme amber`.
+PRESETS = {
+    "neon": {
+        "ok": "38;2;0;230;118",
+        "warn": "38;2;255;235;59",
+        "danger": "38;2;255;82;82",
+        "info": "38;2;0;229;255",
+        "accent": "38;2;255;152;0",
+        "muted": "38;2;120;144;156",
+        "title": "1;38;2;255;255;255",
+    },
+    "amber": {
+        "ok": "38;2;120;220;120",
+        "warn": "38;2;255;190;60",
+        "danger": "38;2;255;110;70",
+        "info": "38;2;255;210;140",
+        "accent": "38;2;255;160;40",
+        "muted": "38;2;150;130;100",
+        "title": "1;38;2;255;240;210",
+    },
+    "mono": {
+        "ok": "38;2;235;235;235",
+        "warn": "38;2;200;200;200",
+        "danger": "38;2;255;255;255",
+        "info": "38;2;190;190;190",
+        "accent": "38;2;220;220;220",
+        "muted": "38;2;120;120;120",
+        "title": "1;38;2;255;255;255",
+    },
+}
+
 # Truecolor, matching the original hard-coded literals.
 _TRUECOLOR = {
     "ok": "38;2;0;230;118",
@@ -79,13 +111,15 @@ RISK_GLYPHS = {
 class Theme(object):
     """Resolved palette. When `plain` is true every role renders as ''."""
 
-    def __init__(self, depth="truecolor", plain=False):
+    def __init__(self, depth="truecolor", plain=False, preset="neon"):
         self.plain = plain or depth == "none"
         self.depth = "none" if self.plain else depth
+        self.preset = preset if preset in PRESETS else "neon"
         if self.plain:
             self._table = {}
         elif depth == "truecolor":
-            self._table = _TRUECOLOR
+            self._table = dict(PRESETS[self.preset])
+            self._table.update({"bold": "1", "dim": "2"})
         elif depth == "256":
             self._table = _X256
         else:
@@ -166,4 +200,7 @@ def make_theme(caps=None):
         from . import term
 
         caps = term.caps()
-    return Theme(depth=caps.color_depth, plain=caps.no_color)
+    import os
+
+    return Theme(depth=caps.color_depth, plain=caps.no_color,
+                 preset=os.environ.get("ALFI_THEME", "neon"))

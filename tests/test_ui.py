@@ -216,3 +216,65 @@ class TestUIFacade(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestGraphicsWidgets(unittest.TestCase):
+
+    def test_sparkline_exact_width(self):
+        line = widgets.sparkline([1, 5, 3, 9, 2], width=20)
+        self.assertEqual(display_width(line), 20)
+
+    def test_sparkline_empty_is_blank(self):
+        self.assertEqual(widgets.sparkline([], width=6), " " * 6)
+
+    def test_sparkline_rises_with_values(self):
+        low = widgets.sparkline([1, 1, 1], width=3)
+        high = widgets.sparkline([9, 9, 9], width=3)
+        self.assertEqual(low, high)  # flat series has no shape
+
+    def test_sparkline_ascii_mode(self):
+        line = widgets.sparkline([1, 2, 3], width=3, ascii_mode=True)
+        self.assertTrue(all(ord(c) < 128 for c in line))
+
+    def test_gauge_clamps_and_reports(self):
+        self.assertIn("50%", widgets.gauge(5, 10, width=10))
+        self.assertIn("100%", widgets.gauge(99, 10, width=10))
+        self.assertIn("0%", widgets.gauge(-5, 10, width=10))
+        self.assertIn("0%", widgets.gauge(1, 0, width=10))
+
+    def test_gauge_shows_label_and_unit(self):
+        line = widgets.gauge(3, 10, width=10, label="RAM", unit="3/10 GB")
+        self.assertIn("RAM", line)
+        self.assertIn("3/10 GB", line)
+
+    def test_gradient_plain_is_identity(self):
+        self.assertEqual(widgets.gradient("ALFi", plain=True), "ALFi")
+
+    def test_gradient_truecolor_keeps_visible_width(self):
+        painted = widgets.gradient("ALFi")
+        self.assertIn("\033[38;2;", painted)
+        self.assertEqual(display_width(painted), 4)
+
+    def test_panel_is_uniform_width(self):
+        lines = widgets.panel(["a", "bb", "ccc"], 40, theme=None, title="MONITOR")
+        self.assertEqual({display_width(x) for x in lines}, {40})
+
+    def test_panel_ascii_mode(self):
+        lines = widgets.panel(["x"], 20, theme=None, ascii_mode=True)
+        self.assertTrue(all(ord(c) < 128 for c in "".join(lines)))
+
+
+class TestThemePresets(unittest.TestCase):
+
+    def test_presets_differ(self):
+        neon = Theme(depth="truecolor", preset="neon").ok
+        amber = Theme(depth="truecolor", preset="amber").ok
+        self.assertNotEqual(neon, amber)
+
+    def test_unknown_preset_falls_back(self):
+        self.assertEqual(Theme(depth="truecolor", preset="nope").preset, "neon")
+
+    def test_env_selects_preset(self):
+        with patch.dict(os.environ, {"ALFI_THEME": "mono"}, clear=False):
+            theme_obj = make_theme(TermCaps())
+            self.assertEqual(theme_obj.preset, "mono")

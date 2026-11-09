@@ -238,3 +238,97 @@ def progress_bar(done, total, width, theme=None, label=""):
     if label:
         line += "  " + truncate(str(label), max(8, width - display_width(line) - 2))
     return line
+
+
+SPARK_CHARS = "\u2581\u2582\u2583\u2584\u2585\u2586\u2587\u2588"   # ▁▂▃▄▅▆▇█
+SPARK_ASCII = "._-~=*#@"
+
+
+def sparkline(values, width=None, theme=None, role="ok", ascii_mode=False):
+    """Render a series as block glyphs. Always exactly `width` cells when given."""
+    chars = SPARK_ASCII if ascii_mode else SPARK_CHARS
+    series = [float(v) for v in (values or []) if v is not None]
+    if not series:
+        return " " * (width or 0)
+    if width and len(series) > width:
+        # Downsample by averaging buckets so the shape survives.
+        step = len(series) / float(width)
+        series = [
+            sum(series[int(i * step):max(int((i + 1) * step), int(i * step) + 1)])
+            / max(1, len(series[int(i * step):max(int((i + 1) * step), int(i * step) + 1)]))
+            for i in range(width)
+        ]
+    low, high = min(series), max(series)
+    span = (high - low) or 1.0
+    out = []
+    for value in series:
+        index = int(round((value - low) / span * (len(chars) - 1)))
+        out.append(chars[max(0, min(len(chars) - 1, index))])
+    text = "".join(out)
+    if width:
+        text = pad(text, width)
+    return theme.paint(text, role) if theme else text
+
+
+def gauge(value, maximum, width=20, theme=None, label="", unit="", ascii_mode=False):
+    """A labelled meter: LABEL [#####-----] 62%  12.3/16.0 GB"""
+    try:
+        ratio = 0.0 if not maximum else max(0.0, min(1.0, float(value) / float(maximum)))
+    except (TypeError, ValueError, ZeroDivisionError):
+        ratio = 0.0
+    role = "ok" if ratio < 0.7 else ("warn" if ratio < 0.9 else "danger")
+    full_ch = "#" if ascii_mode else "\u2588"
+    empty_ch = "-" if ascii_mode else "\u2591"
+    filled = int(round(ratio * width))
+    body = full_ch * filled + empty_ch * (width - filled)
+    if theme and not theme.plain:
+        body = theme.paint(full_ch * filled, role) + theme.paint(empty_ch * (width - filled), "muted")
+    head = pad(label, 10) + " " if label else ""
+    tail = " %3d%%" % int(round(ratio * 100))
+    if unit:
+        tail += "  " + unit
+    return head + "[" + body + "]" + tail
+
+
+def gradient(text, start=(0, 230, 118), end=(0, 229, 255), plain=False):
+    """Truecolour sweep across a string. Plain mode returns the text unchanged."""
+    if plain or not text:
+        return text
+    clean = strip_ansi(text)
+    chars = [c for c in clean if display_width(c)]
+    span = max(1, len(chars) - 1)
+    out = []
+    index = 0
+    for ch in clean:
+        if not display_width(ch):
+            out.append(ch)
+            continue
+        t = index / float(span)
+        r = int(start[0] + (end[0] - start[0]) * t)
+        g = int(start[1] + (end[1] - start[1]) * t)
+        b = int(start[2] + (end[2] - start[2]) * t)
+        out.append("\033[38;2;%d;%d;%dm%s" % (r, g, b, ch))
+        index += 1
+    return "".join(out) + "\033[0m"
+
+
+def panel(lines, width, theme=None, title=None, ascii_mode=False):
+    """Double-ruled frame for the 'graphics' surfaces (live monitor, results)."""
+    if ascii_mode:
+        tl, tr, bl, br, h, v = "+", "+", "+", "+", "=", "|"
+    else:
+        tl, tr, bl, br, h, v = "\u2554", "\u2557", "\u255a", "\u255d", "\u2550", "\u2551"
+    inner = max(4, width - 2)
+    if title:
+        label = " " + title + " "
+        head = h + label + h * max(0, inner - display_width(label) - 1)
+        top = tl + pad(head, inner) + tr
+    else:
+        top = tl + h * inner + tr
+    out = [theme.paint(top, "muted") if theme else top]
+    for line in lines:
+        row = v + " " + pad(line, inner - 2) + " " + v
+        out.append(theme.paint(row, "muted") if theme else row)
+    bottom = bl + h * inner + br
+    out.append(theme.paint(bottom, "muted") if theme else bottom)
+    return out
