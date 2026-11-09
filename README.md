@@ -110,12 +110,14 @@ android-lag-fixer/
 │   ├── optimize.py                          # Safe OEM debloater with automatic restore manifest
 │   ├── restore.py                           # 1-click restore from manifest or package name
 │   ├── compile_speed.py                     # ART AOT pre-compilation & reset point engine
+│   ├── appops_restrict.py                   # AppOps background execution limits & standby bucket manager
 │   ├── tweak_ui.py                          # 2x animation scaling & system cache trimmer
 │   └── device_tracker.py                    # Hardware serial fingerprinting & multi-device audit vault
 │
 ├── tests/
 │   ├── test_operations.py                   # Automated unit tests for package mutations
-│   └── test_compile_speed.py                # Mocked tests for ART compilation & reset points
+│   ├── test_compile_speed.py                # Mocked tests for ART compilation & reset points
+│   └── test_appops_restrict.py              # Mocked tests for AppOps limits & standby buckets
 │
 └── references/
     ├── connection_guide.md                  # USB drivers, developer settings, wireless debugging
@@ -226,12 +228,33 @@ python scripts/compile_speed.py --reset-app com.android.settings
 ```
 *(Every compilation run automatically records a reset manifest in `backups/` and logs the event to your local device vault in `devices/<slug>/history.md`).*
 
-#### 4. Disable Memory Extension (On Your Phone)
+#### 4. AppOps Background Execution Limits & Standby Buckets (Phase 2)
+For apps you need to keep installed (e.g. Instagram, Facebook, Snapchat, Truecaller, shopping apps) but don't want draining CPU cycles, running background wakelocks, or polling telemetry while minimized:
+
+```bash
+# Restrict background execution for common social & battery hogs:
+python scripts/appops_restrict.py --preset social --bucket restricted
+
+# Restrict a specific package:
+python scripts/appops_restrict.py --app com.instagram.android --mode ignore --bucket restricted
+
+# Preview restrictions safely without modifying device:
+python scripts/appops_restrict.py --preset social --dry-run
+
+# 1-Click Rollback / Reset Point (restores original AppOps and standby states):
+python scripts/appops_restrict.py --reset-manifest appops_manifest_SM-G615F_YYYYMMDD_HHMMSS.json
+
+# Or restore background activity for a single app:
+python scripts/appops_restrict.py --reset-app com.instagram.android
+```
+*(Every execution automatically captures a pre-flight snapshot manifest in `backups/` and logs the action to your local PC device vault).*
+
+#### 5. Disable Memory Extension (On Your Phone)
 * **Xiaomi / HyperOS / MIUI**: Settings > Additional Settings > Memory Extension > Select **Off** > Reboot.
 * **Samsung One UI**: Settings > Battery and device care > Memory > RAM Plus > Select **Off** (or 0 GB unlocked by this tool) > Reboot.
 * **Realme / Oppo / OnePlus**: Settings > About Device > RAM > Toggle OFF **RAM Expansion** > Reboot.
 
-#### 4. Run Post-Optimization Benchmark & Prove Speedup
+#### 6. Run Post-Optimization Benchmark & Prove Speedup
 ```bash
 # Collect after benchmark:
 python scripts/bench.py --app com.android.settings --duration 8 --save after.json

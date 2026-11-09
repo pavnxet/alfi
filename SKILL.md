@@ -93,13 +93,26 @@ python scripts/compile_speed.py --all-user-apps --filter speed-profile
 python scripts/compile_speed.py --reset-manifest latest
 ```
 
-### Phase 7: Post-Optimization Verification
+### Phase 7: AppOps Background Execution Limits & Standby Buckets
+Restricts apps the user must keep (Instagram, Facebook, Truecaller) from burning background CPU and wake locks:
+```bash
+# Restrict background execution for common hogs:
+python scripts/appops_restrict.py --preset social --bucket restricted
+
+# Restrict specific app:
+python scripts/appops_restrict.py --app com.instagram.android --mode ignore --bucket restricted
+
+# Revert / Rollback from snapshot manifest:
+python scripts/appops_restrict.py --reset-manifest latest
+```
+
+### Phase 8: Post-Optimization Verification
 ```bash
 python scripts/bench.py --app com.android.settings --duration 8 --save after.json
 python scripts/bench.py --compare before.json after.json
 ```
 
-### Phase 8: Disaster-Free Restoration (Rollback)
+### Phase 9: Disaster-Free Restoration (Rollback)
 If any desired feature or app was disabled:
 ```bash
 # Restore everything from the latest manifest:
