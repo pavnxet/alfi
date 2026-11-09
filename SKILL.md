@@ -84,13 +84,22 @@ python scripts/optimize.py --profile auto
 python scripts/tweak_ui.py --scale 0.5 --trim-cache
 ```
 
-### Phase 6: Post-Optimization Verification
+### Phase 6: ART Ahead-Of-Time (AOT) Compilation & Reset Points
+```bash
+# Pre-compile apps for faster launches and zero JIT stutter:
+python scripts/compile_speed.py --all-user-apps --filter speed-profile
+
+# Rollback compilation via reset point manifest if needed:
+python scripts/compile_speed.py --reset-manifest latest
+```
+
+### Phase 7: Post-Optimization Verification
 ```bash
 python scripts/bench.py --app com.android.settings --duration 8 --save after.json
 python scripts/bench.py --compare before.json after.json
 ```
 
-### Phase 7: Disaster-Free Restoration (Rollback)
+### Phase 8: Disaster-Free Restoration (Rollback)
 If any desired feature or app was disabled:
 ```bash
 # Restore everything from the latest manifest:

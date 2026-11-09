@@ -109,11 +109,13 @@ android-lag-fixer/
 │   ├── security_audit.py                    # Sketchy apps, accessibility hijackers & permission auditor
 │   ├── optimize.py                          # Safe OEM debloater with automatic restore manifest
 │   ├── restore.py                           # 1-click restore from manifest or package name
+│   ├── compile_speed.py                     # ART AOT pre-compilation & reset point engine
 │   ├── tweak_ui.py                          # 2x animation scaling & system cache trimmer
 │   └── device_tracker.py                    # Hardware serial fingerprinting & multi-device audit vault
 │
 ├── tests/
-│   └── test_operations.py                   # Automated unit test suite
+│   ├── test_operations.py                   # Automated unit tests for package mutations
+│   └── test_compile_speed.py                # Mocked tests for ART compilation & reset points
 │
 └── references/
     ├── connection_guide.md                  # USB drivers, developer settings, wireless debugging
@@ -208,7 +210,23 @@ python scripts/tweak_ui.py --scale 0.5 --trim-cache
 ```
 *Cuts gesture navigation latency in half and trims stale system caches.*
 
-#### 3. Disable Memory Extension (On Your Phone)
+#### 3. ART Ahead-Of-Time (AOT) Pre-Compilation & Reset Points
+```bash
+# Pre-compile hot code paths for all user apps to eliminate JIT launch stutter:
+python scripts/compile_speed.py --all-user-apps --filter speed-profile
+
+# Compile a specific heavy application for maximum execution performance:
+python scripts/compile_speed.py --app com.android.settings --filter speed
+
+# 1-Click Rollback / Reset Point (reverts packages back to default JIT state):
+python scripts/compile_speed.py --reset-manifest compile_manifest_SM-G615F_YYYYMMDD_HHMMSS.json
+
+# Or reset a single app:
+python scripts/compile_speed.py --reset-app com.android.settings
+```
+*(Every compilation run automatically records a reset manifest in `backups/` and logs the event to your local device vault in `devices/<slug>/history.md`).*
+
+#### 4. Disable Memory Extension (On Your Phone)
 * **Xiaomi / HyperOS / MIUI**: Settings > Additional Settings > Memory Extension > Select **Off** > Reboot.
 * **Samsung One UI**: Settings > Battery and device care > Memory > RAM Plus > Select **Off** (or 0 GB unlocked by this tool) > Reboot.
 * **Realme / Oppo / OnePlus**: Settings > About Device > RAM > Toggle OFF **RAM Expansion** > Reboot.
