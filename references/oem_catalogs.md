@@ -8,7 +8,15 @@ This reference document catalogs common pre-installed system packages across maj
 
 | Package Name | Service Name | Default Tier | Technical Impact & Resource Usage |
 |---|---|---|---|
+| `com.aura.oobe.samsung` | IronSource Aura OOBE | `Recommended` | Aggressive OEM dynamic app preload engine. Frequently loops at **9-10% CPU** in the background downloading promotional stubs. |
 | `com.samsung.android.sm.devicesecurity` | McAfee Device Security | `Recommended` | Consistently drains **10-15% CPU** in background while performing periodic storage scanning. High thermal impact. |
+| `com.samsung.android.airtel.stubapp` | Airtel Carrier Preload | `Recommended` | Telemetry stub preloaded by regional network carriers. |
+| `com.samsung.android.diagmonagent` | Diagnostic Monitor | `Recommended` | System diagnostic log collector and periodic cloud reporter. |
+| `com.samsung.android.securitylogagent` | Security Log Agent | `Recommended` | Heavy kernel log writer that triggers flash storage wakeups. |
+| `com.samsung.android.rubin.app` | Customization Service | `Recommended` | Tracks user behavioral patterns and app usage for targeted ad recommendations. |
+| `com.samsung.android.dqagent` | Device Quality Agent | `Recommended` | Periodic network and battery statistics uploader. |
+| `com.samsung.android.da.daagent` | Dual Audio / Ad Daemon | `Recommended` | Background daemon tracking peripheral connections and analytics. |
+| `com.sec.android.app.billing` | Samsung Billing Service | `Recommended` | Persistent in-app purchase background daemon (safe to freeze if not using Galaxy Store purchases). |
 | `com.samsung.android.spaymini` | Samsung Pay Mini | `Recommended` | Persistent background payment framework and promotion daemon. |
 | `com.samsung.android.game.gamehome` | Game Launcher | `Recommended` | Delivers sponsored game ads, notifications, and telemetry. |
 | `com.samsung.android.game.gametools` | Game Tools | `Recommended` | Floating window overlay hooks consuming compositor resources. |
@@ -37,7 +45,10 @@ This reference document catalogs common pre-installed system packages across maj
 | Package Name | Service Name | Default Tier | Technical Impact & Resource Usage |
 |---|---|---|---|
 | `com.miui.msa.global` | MIUI System Ads (MSA) | `Recommended` | Central advertising daemon pushing banners and lockscreen promotions. |
+| `com.miui.android.fashiongallery` | Glance Wallpaper Carousel | `Recommended` | Aggressive lockscreen advertising and sponsored content engine causing continuous wakelocks. |
 | `com.miui.analytics` | MIUI Analytics | `Recommended` | Collects comprehensive behavioral analytics and device usage logs. |
+| `com.miui.analytics.go` | MIUI Analytics (Go Edition) | `Recommended` | Low-RAM lightweight analytics collector preloaded on budget Redmi devices. |
+| `com.miui.cleaner.go` | MIUI Cleaner (Go Edition) | `Recommended` | Bundled cleaner daemon causing periodic background scans and memory page faults. |
 | `com.xiaomi.joyose` | Joyose Throttler | `Recommended` | Known for aggressive thermal down-throttling in games and benchmark throttling. |
 | `com.miui.daemon` | System Daemon | `Recommended` | Periodic log collector and diagnostic telemetric reporter. |
 | `com.miui.cleanmaster` | CleanMaster Engine | `Recommended` | Bundled Cheetah Mobile cleaner engine laden with ad network SDKs. |

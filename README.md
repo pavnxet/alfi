@@ -76,7 +76,7 @@ In reality, Android lag and micro-stutters stem from 4 distinct kernel and userl
 
 ## 📊 Real-World Benchmark Results
 
-Tested on a budget device (**Redmi A1+ / Helio A22 / 2GB RAM** running Android 12 Go):
+### Device 1: Budget Entry Phone (**Redmi A1+ / Helio A22 / 2GB RAM** running Android 12 Go)
 
 | Metric | Before Optimization | After Optimization | Real-World Impact |
 | :--- | :--- | :--- | :--- |
@@ -86,14 +86,24 @@ Tested on a budget device (**Redmi A1+ / Helio A22 / 2GB RAM** running Android 1
 | **UI Animation Latency** | `1.0x` (Sluggish) | **`0.5x` (Snappy)** | **2x faster app opening & gesture speed** |
 | **Lockscreen & Meta Ads** | Running 24/7 | **0 Wakelocks** | **Noticeably cooler phone & longer battery** |
 
+### Device 2: Legacy Samsung Phone (**Galaxy J7 Max / SM-G615F / 4GB RAM** running Android 8.1.0)
+
+| Metric | Before Optimization | After Optimization | Real-World Impact |
+| :--- | :--- | :--- | :--- |
+| **System Server CPU Load** | `152%` (Thermal Throttling) | **`31%`** | **-79.6% drop in core OS CPU consumption** |
+| **Google Play Services CPU** | `133%` | **`24%`** | **-82.0% reduction in background polling** |
+| **IronSource Aura OEM Adware** | `9.4%` CPU (Looping) | **Killed (0%)** | **Eliminated rogue background app-installer** |
+| **Available Physical RAM** | `2078.7 MB` | **`2131.0 MB`** | **+52.3 MB memory headroom reclaimed** |
+| **1-Minute CPU Load Average** | `16.86` (Extreme Saturation) | **`11.04`** | **-34.5% overall system load reduction** |
+
 ---
 
 ## 📂 Repository Structure
 
 ```text
 android-lag-fixer/
-├── .github/workflows/ci.yml                 # Multi-OS GitHub Actions CI (Ubuntu, Windows, macOS)
-├── pyproject.toml                           # Modern Python package specification (PEP 517/621)
+├── .github/workflows/ci.yml                 # Multi-OS GitHub Actions CI (Ubuntu, Windows, macOS across Python 3.10-3.13)
+├── pyproject.toml                           # Modern PEP 517/621 packaging with global CLI entry points
 ├── LICENSE                                  # MIT Open Source License
 ├── README.md                                # Comprehensive user & developer guide
 ├── SKILL.md                                 # Agent Skill specification (Antigravity/Claude)
@@ -102,6 +112,7 @@ android-lag-fixer/
 ├── package_database.json                    # Multi-tier risk catalog (Recommended, Advanced, Unsafe)
 │
 ├── scripts/
+│   ├── __init__.py                          # Package root & metadata
 │   ├── connect.py                           # Device connection & wireless pairing wizard
 │   ├── diagnose.py                          # CPU load, ZRAM, memory pressure & process auditor
 │   ├── operations.py                        # Verified state engine, fallback ladder & Android 17 resolution
@@ -115,17 +126,20 @@ android-lag-fixer/
 │   ├── export_shizuku.py                    # On-device Shizuku / rish shell & paired rollback exporter
 │   ├── update_database.py                   # Community UAD-ng debloat list merger & schema validator
 │   ├── wizard.py                            # Unified interactive terminal control dashboard
+│   ├── errors.py                            # Actionable error taxonomy & remediation engine
 │   ├── tweak_ui.py                          # 2x animation scaling & system cache trimmer
 │   └── device_tracker.py                    # Hardware serial fingerprinting & multi-device audit vault
 │
 ├── tests/
+│   ├── fixtures/                            # Real recorded device dumps (Samsung, Redmi, Pixel, Android 17)
 │   ├── test_operations.py                   # Automated unit tests for package mutations
 │   ├── test_compile_speed.py                # Mocked tests for ART compilation & reset points
 │   ├── test_appops_restrict.py              # Mocked tests for AppOps limits & standby buckets
 │   ├── test_rescue.py                       # Mocked tests for emergency feature rescue & recovery
 │   ├── test_export_shizuku.py               # Mocked tests for Shizuku & rollback shell exporter
 │   ├── test_update_database.py              # Mocked tests for community list parsing & database merging
-│   └── test_wizard.py                       # Mocked tests for terminal wizard & command formulation
+│   ├── test_wizard.py                       # Mocked tests for terminal wizard & command formulation
+│   └── test_oem_fixtures.py                 # Mock hardware integration tests against OEM fixtures
 │
 └── references/
     ├── connection_guide.md                  # USB drivers, developer settings, wireless debugging
