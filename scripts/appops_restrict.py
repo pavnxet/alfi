@@ -182,14 +182,19 @@ def main():
 
     devices = get_connected_devices()
     auth = [d for d in devices if d["status"] == "device"]
-    if not auth:
-        print("❌ No authorized Android device connected. Run 'python scripts/connect.py' first.")
-        sys.exit(1)
+    if not auth and not args.dry_run:
+        print("\n" + "="*70)
+        print(" 🛡️ APPOPS & STANDBY BUCKET RESTRICTOR [STANDALONE / SIMULATOR MODE]")
+        print("="*70)
+        print(" 💡 Connect your phone with USB Debugging enabled to throttle background hogs.")
+        args.dry_run = True
 
-    target_serial = auth[0]["serial"]
-    info = get_device_info(target_serial)
-    fp = get_device_fingerprint(target_serial)
-    slug = fp["device_slug"]
+    target_serial = auth[0]["serial"] if auth else None
+    info = get_device_info(target_serial) if target_serial else {"brand": "Generic", "model": "Android Device (Simulated)"}
+    slug = "generic_simulator"
+    if target_serial:
+        fp = get_device_fingerprint(target_serial)
+        slug = fp["device_slug"]
 
     # 1. Reset from manifest
     if args.reset_manifest:
@@ -252,15 +257,23 @@ def main():
     target_pkgs = []
     if args.app:
         target_pkgs.append(args.app.strip())
-    elif args.preset == "social":
+    elif target_serial and args.preset == "social":
         ok, out = run_adb(["-s", target_serial, "shell", "pm list packages"])
         if ok and out:
             installed = set(l.replace("package:", "").strip() for l in out.splitlines())
             target_pkgs = [p for p in PRESET_BACKGROUND_HOGS if p in installed]
-    elif args.preset == "all-user":
+    elif target_serial and args.preset == "all-user":
         ok, out = run_adb(["-s", target_serial, "shell", "pm list packages -3"])
         if ok and out:
             target_pkgs = [l.replace("package:", "").strip() for l in out.splitlines() if l.strip()]
+    else:
+        # Default representative hogs for simulation
+        target_pkgs = [
+            "com.facebook.katana",
+            "com.instagram.android",
+            "com.snapchat.android",
+            "com.amazon.mShop.android.shopping"
+        ]
 
     if not target_pkgs:
         print("ℹ️ No matching target packages found on device.")

@@ -110,5 +110,25 @@ class TestWizard(unittest.TestCase):
             extra_args=["--mode", "ultra", "--force-ultra"]
         )
 
+    @patch("wizard.subprocess.run")
+    def test_run_wizard_action_failure_card(self, mock_subproc):
+        """Ensure non-zero exit codes are shielded inside formatted status cards."""
+        mock_proc = MagicMock()
+        mock_proc.returncode = 1
+        mock_proc.stdout = "Simulated internal script failure"
+        mock_subproc.return_value = mock_proc
+
+        ok, out = run_wizard_action("bench")
+        self.assertFalse(ok)
+        self.assertIn("ACTION NOTIFICATION (Exit Code 1)", out)
+        self.assertIn("Simulated internal script failure", out)
+
+    @patch("wizard.subprocess.run", side_effect=OSError("Process spawn failure"))
+    def test_run_wizard_action_exception_handling(self, mock_subproc):
+        """Ensure OS-level process exceptions are caught cleanly."""
+        ok, out = run_wizard_action("modes")
+        self.assertFalse(ok)
+        self.assertIn("EXECUTION FAILED", out)
+
 if __name__ == "__main__":
     unittest.main()

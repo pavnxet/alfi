@@ -44,8 +44,28 @@ def main():
     devices = get_connected_devices()
     auth = [d for d in devices if d["status"] == "device"]
     if not auth:
-        print("❌ No authorized Android device connected. Run 'python scripts/connect.py' first.")
-        sys.exit(1)
+        latest = get_latest_manifest()
+        if args.json:
+            print(json.dumps({
+                "device_connected": False,
+                "latest_manifest": latest
+            }, indent=2))
+        else:
+            print("\n" + "="*70)
+            print(" 🔄 1-CLICK ROLLBACK & RESTORATION [STANDALONE CONSOLE]")
+            print("="*70)
+            if latest:
+                with open(latest, "r", encoding="utf-8") as f:
+                    m_data = json.load(f)
+                pkgs = m_data.get("disabled_packages", m_data.get("packages", []))
+                print(f"  • Latest Snapshot  : backups/{os.path.basename(latest)}")
+                print(f"  • Snapshot Date    : {m_data.get('timestamp')}")
+                print(f"  • Restorable Apps  : {len(pkgs)} package(s)")
+            else:
+                print("  • No previous restore snapshots found in backups/.")
+            print("\n 💡 Plug in your phone via USB or Wireless Debugging to execute 1-click restore.")
+            print("="*70 + "\n")
+        return
 
     target_serial = auth[0]["serial"]
     info = get_device_info(target_serial)

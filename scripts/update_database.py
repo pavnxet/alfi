@@ -73,34 +73,73 @@ def load_local_database() -> Dict[str, Any]:
     with open(DB_PATH, "r", encoding="utf-8") as f:
         return json.load(f)
 
-def parse_community_list(raw_data: List[Dict[str, Any]]) -> Tuple[Dict[str, Dict[str, Any]], int, int]:
+def parse_community_list(raw_data: Any) -> Tuple[Dict[str, Dict[str, Any]], int, int]:
     """
     Parse UAD-ng list format into structured packages categorized by OEM.
+    Supports both dictionary mapping format (current upstream UAD-ng) and list format.
     Returns (categorized_dict, accepted_count, rejected_count).
     """
     categorized: Dict[str, Dict[str, Any]] = {}
     accepted = 0
     rejected = 0
 
-    for item in raw_data:
-        pkg = item.get("id", "").strip()
-        if not validate_package_name(pkg):
-            rejected += 1
-            continue
+    if not raw_data:
+        return categorized, accepted, rejected
 
-        raw_list = item.get("list", "Advanced").capitalize()
-        tier = raw_list if raw_list in ["Recommended", "Advanced", "Expert", "Unsafe"] else "Advanced"
-        description = item.get("description", "").strip() or "Identified by community debloat database."
+    # Format 1: Dictionary mapping { "com.example.app": { "removal": "Recommended", ... } }
+    if isinstance(raw_data, dict):
+        items_to_process = []
+        for pkg_id, meta in raw_data.items():
+            if isinstance(meta, dict):
+                item_dict = dict(meta)
+                item_dict.setdefault("id", pkg_id)
+                items_to_process.append(item_dict)
+            elif isinstance(meta, str):
+                items_to_process.append({"id": pkg_id, "list": meta})
+    elif isinstance(raw_data, list):
+        items_to_process = raw_data
+    else:
+        return categorized, accepted, rejected
+
+    for item in items_to_process:
+        if not isinstance(item, dict):
+            if isinstance(item, str) and validate_package_name(item.strip()):
+                pkg = item.strip()
+                tier = "Advanced"
+                description = "Identified by community debloat database."
+                dependencies = []
+                dependents = []
+            else:
+                rejected += 1
+                continue
+        else:
+            pkg = item.get("id", "").strip()
+            if not validate_package_name(pkg):
+                rejected += 1
+                continue
+
+            raw_tier = item.get("removal") or item.get("list") or "Advanced"
+            raw_tier_str = str(raw_tier).capitalize()
+            tier = raw_tier_str if raw_tier_str in ["Recommended", "Advanced", "Expert", "Unsafe"] else "Advanced"
+            description = (item.get("description") or "").strip() or "Identified by community debloat database."
+            dependencies = item.get("dependencies") or []
+            dependents = item.get("neededBy") or []
+
         category = categorize_package(pkg)
-
         if category not in categorized:
             categorized[category] = {}
 
-        categorized[category][pkg] = {
+        pkg_entry: Dict[str, Any] = {
             "name": pkg.split(".")[-1].replace("_", " ").title(),
             "tier": tier,
             "impact": description
         }
+        if dependencies:
+            pkg_entry["dependencies"] = dependencies
+        if dependents:
+            pkg_entry["dependents"] = dependents
+
+        categorized[category][pkg] = pkg_entry
         accepted += 1
 
     return categorized, accepted, rejected
@@ -130,10 +169,17 @@ def merge_databases(
                 cat_pkgs[pkg] = meta
                 new_count += 1
             else:
-                # Keep local descriptions if they are more detailed, otherwise update tier
-                if meta.get("tier") and cat_pkgs[pkg].get("tier") != meta["tier"]:
-                    cat_pkgs[pkg]["tier"] = meta["tier"]
-                    updated_count += 1
+                # Keep local curated classifications and modes intact
+                if "mode" in cat_pkgs[pkg]:
+                    # Merge extra dependencies/dependents without overwriting curated tier
+                    if meta.get("dependencies") and not cat_pkgs[pkg].get("dependencies"):
+                        cat_pkgs[pkg]["dependencies"] = meta["dependencies"]
+                    if meta.get("dependents") and not cat_pkgs[pkg].get("dependents"):
+                        cat_pkgs[pkg]["dependents"] = meta["dependents"]
+                else:
+                    if meta.get("tier") and cat_pkgs[pkg].get("tier") != meta["tier"]:
+                        cat_pkgs[pkg]["tier"] = meta["tier"]
+                        updated_count += 1
 
     existing["last_updated"] = datetime.now().isoformat()
     return existing, new_count, updated_count

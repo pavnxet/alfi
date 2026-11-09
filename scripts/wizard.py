@@ -206,9 +206,18 @@ def run_wizard_action(
             encoding="utf-8",
             errors="replace"
         )
-        return proc.returncode == 0, proc.stdout
+        if proc.returncode != 0:
+            err_box = f"\n{C_RED}╭{'─' * 72}╮{C_RESET}\n"
+            err_box += f"{C_RED}│ ⚠️  ACTION NOTIFICATION (Exit Code {proc.returncode}){' ' * 38}│{C_RESET}\n"
+            err_box += f"{C_RED}╰{'─' * 72}╯{C_RESET}\n"
+            err_box += proc.stdout
+            return False, err_box
+        return True, proc.stdout
     except Exception as e:
-        return False, str(e)
+        err_box = f"\n{C_RED}╭{'─' * 72}╮{C_RESET}\n"
+        err_box += f"{C_RED}│ ❌  EXECUTION FAILED: {str(e)[:50]:<48}│{C_RESET}\n"
+        err_box += f"{C_RED}╰{'─' * 72}╯{C_RESET}\n"
+        return False, err_box
 
 def print_banner():
     """Print the ALFi ASCII brand logo and subtitle."""

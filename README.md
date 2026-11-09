@@ -5,8 +5,8 @@
 # ⚡ ALFi — Android Lag Fixer & Security Optimizer (Non-Root ADB)
 
 <p align="center">
-  <a href="https://github.com/pavnxet/android-lag-fixer/actions/workflows/ci.yml">
-    <img src="https://github.com/pavnxet/android-lag-fixer/actions/workflows/ci.yml/badge.svg" alt="CI Status" />
+  <a href="https://github.com/pavnxet/alfi/actions/workflows/ci.yml">
+    <img src="https://github.com/pavnxet/alfi/actions/workflows/ci.yml/badge.svg" alt="CI Status" />
   </a>
   <img src="https://img.shields.io/badge/Platform-Android_9_--_17+-3DDC84?style=flat&logo=android&logoColor=white" alt="Android 9 to 17+" />
   <img src="https://img.shields.io/badge/Python-3.9+-3776AB?style=flat&logo=python&logoColor=white" alt="Python 3.9+" />
@@ -105,7 +105,7 @@ In reality, Android lag and micro-stutters stem from 4 distinct kernel and userl
 
 ## 🎮 The 4 Calibrated Optimization Modes (Low, Medium, High, Ultra)
 
-Instead of forcing users to guess which tweaks to run, `android-lag-fixer` features an interactive, **Mode-First Architecture**. Before applying changes, the terminal asks you to select between four calibrated tiers. High-risk, destructive, or breaking modifications are strictly quarantined inside **Ultra** behind explicit confirmation gates and dependency graph checks.
+Instead of forcing users to guess which tweaks to run, **ALFi** features an interactive, **Mode-First Architecture**. Before applying changes, the terminal asks you to select between four calibrated tiers. High-risk, destructive, or breaking modifications are strictly quarantined inside **Ultra** behind explicit confirmation gates and dependency graph checks.
 
 ```text
 ======================================================================
@@ -157,7 +157,7 @@ python scripts/modes.py --mode ultra --force-ultra
 
 ## 💡 Upstream Innovations & Community Inspirations
 
-`android-lag-fixer` integrates battle-tested paradigms from premier open-source Android tooling:
+**ALFi** integrates battle-tested paradigms from premier open-source Android tooling:
 
 ### 1. 🧩 Package Dependency Graph Engine *(Inspired by UAD-ng)*
 * **Problem**: Blindly disabling vendor packages breaks dependent applications (e.g. disabling Samsung Account breaks Galaxy Wearable and Galaxy Store; disabling Google Services Framework breaks Google Play).
@@ -195,7 +195,7 @@ python scripts/modes.py --mode ultra --force-ultra
 ## 📂 Repository Structure
 
 ```text
-android-lag-fixer/
+alfi/
 ├── .github/workflows/ci.yml                 # Multi-OS GitHub Actions CI (Ubuntu, Windows, macOS across Python 3.10-3.13)
 ├── pyproject.toml                           # Modern PEP 517/621 packaging with global CLI entry points
 ├── LICENSE                                  # MIT Open Source License
@@ -265,7 +265,7 @@ python scripts/wizard.py
 ### 📦 Optional: Install Globally via pipx / pip
 You can install and run `ALFi` directly as a standalone system command:
 ```bash
-pipx install git+https://github.com/pavnxet/android-lag-fixer.git
+pipx install git+https://github.com/pavnxet/alfi.git
 
 # Run directly from anywhere in your terminal:
 alfi             # Launches the sleek ALFi interactive control dashboard

@@ -44,36 +44,14 @@ def update_database_from_upstream():
             data = json.loads(resp.read().decode("utf-8"))
         
         current_db = load_database()
-        merged_count = 0
-        
-        # UAD-ng format maps list of package objects
-        if isinstance(data, list):
-            for item in data:
-                pkg_id = item.get("id")
-                if not pkg_id:
-                    continue
-                # Determine tier mapping
-                removal = item.get("removal", "Recommended").capitalize()
-                cat = item.get("list", "misc").lower()
-                
-                if cat not in current_db["categories"]:
-                    current_db["categories"][cat] = {
-                        "name": f"Community {cat.capitalize()}",
-                        "packages": {}
-                    }
-                
-                if pkg_id not in current_db["categories"][cat]["packages"]:
-                    current_db["categories"][cat]["packages"][pkg_id] = {
-                        "name": item.get("description", pkg_id),
-                        "tier": removal,
-                        "impact": item.get("neededBy", "Community debloat list")
-                    }
-                    merged_count += 1
+        from update_database import parse_community_list, merge_databases
+        categorized, accepted, _ = parse_community_list(data)
+        updated_db, new_count, mod_count = merge_databases(current_db, categorized)
 
         with open(db_path, "w", encoding="utf-8") as f:
-            json.dump(current_db, f, indent=2)
+            json.dump(updated_db, f, indent=2)
 
-        print(f"✅ Successfully merged {merged_count} new community package definitions into package_database.json!")
+        print(f"✅ Successfully merged {new_count} new packages and updated {mod_count} definitions into package_database.json!")
     except Exception as e:
         print(f"❌ Failed to fetch upstream package definitions: {e}")
 

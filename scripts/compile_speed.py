@@ -137,14 +137,19 @@ def main():
 
     devices = get_connected_devices()
     auth = [d for d in devices if d["status"] == "device"]
-    if not auth:
-        print("❌ No authorized Android device connected. Run 'python scripts/connect.py' first.")
-        sys.exit(1)
+    if not auth and not args.dry_run:
+        print("\n" + "="*70)
+        print(" 🚀 ART AOT PRE-COMPILATION ENGINE [STANDALONE / SIMULATOR MODE]")
+        print("="*70)
+        print(" 💡 Connect your phone with USB Debugging enabled to execute live compilation.")
+        args.dry_run = True
 
-    target_serial = auth[0]["serial"]
-    info = get_device_info(target_serial)
-    fp = get_device_fingerprint(target_serial)
-    slug = fp["device_slug"]
+    target_serial = auth[0]["serial"] if auth else None
+    info = get_device_info(target_serial) if target_serial else {"brand": "Generic", "model": "Android Device (Simulated)"}
+    slug = "generic_simulator"
+    if target_serial:
+        fp = get_device_fingerprint(target_serial)
+        slug = fp["device_slug"]
 
     # 1. Reset from manifest
     if args.reset_manifest:
@@ -198,12 +203,11 @@ def main():
     targets = []
     if args.app:
         targets.append(args.app.strip())
-    elif args.all_user_apps:
+    elif target_serial and args.all_user_apps:
         ok, out = run_adb(["-s", target_serial, "shell", "pm list packages -3"])
         if ok and out:
             targets = [l.replace("package:", "").strip() for l in out.splitlines() if l.strip()]
-    else:
-        # Default recommended apps to compile: Settings, SystemUI, Calculator, Browser
+    elif target_serial:
         candidates = ["com.android.settings", "com.google.android.googlequicksearchbox"]
         ok, out = run_adb(["-s", target_serial, "shell", "pm list packages"])
         if ok and out:
@@ -211,6 +215,9 @@ def main():
             targets = [c for c in candidates if c in inst]
         if not targets:
             targets = ["com.android.settings"]
+    else:
+        # Simulated target apps when offline
+        targets = ["com.android.settings", "com.google.android.youtube"]
 
     if not targets:
         print("ℹ️ No target packages identified for compilation.")

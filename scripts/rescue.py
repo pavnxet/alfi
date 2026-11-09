@@ -253,9 +253,27 @@ def main():
     devices = get_connected_devices()
     auth = [d for d in devices if d["status"] == "device"]
     if not auth:
-        print("❌ No authorized Android device connected. Run 'python scripts/connect.py' first.")
-        print("💡 If your device is bootlooping or stuck, boot into Safe Mode with '--guide <oem>'.")
-        sys.exit(1)
+        manifests = find_all_manifests()
+        if args.json:
+            print(json.dumps({
+                "device_connected": False,
+                "manifest_count": len(manifests),
+                "manifests": manifests[:5]
+            }, indent=2))
+        else:
+            print("\n" + "="*70)
+            print(" 🚑 EMERGENCY FEATURE RESCUE: STANDALONE RECOVERY CONSOLE")
+            print("="*70)
+            print(" 💡 No authorized phone connected. Once phone is attached:")
+            print("    1. 'python scripts/rescue.py --fix-critical' revives dialers & SystemUI")
+            print("    2. 'python scripts/rescue.py --restore-all-disabled' unblocks all apps")
+            print("    3. 'python scripts/rescue.py --guide <samsung|xiaomi|google|realme_oneplus>' shows Safe Mode keys")
+            if manifests:
+                print(f"\n 📂 Discovered {len(manifests)} pre-flight restore snapshot(s) in backups/:")
+                for m in manifests[:3]:
+                    print(f"    • {m['filename']} ({m['package_count']} packages, {m['timestamp']})")
+            print("="*70 + "\n")
+        return
 
     target_serial = auth[0]["serial"]
     info = get_device_info(target_serial)

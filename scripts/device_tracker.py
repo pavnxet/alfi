@@ -188,8 +188,12 @@ def inspect_connected_device():
     devices = get_connected_devices()
     auth = [d for d in devices if d["status"] == "device"]
     if not auth:
-        print("❌ No authorized Android device connected. Run 'python scripts/connect.py' first.")
-        sys.exit(1)
+        print("\n" + "="*70)
+        print(" 📊 MULTI-DEVICE AUDIT VAULT [STANDALONE CONSOLE]")
+        print("="*70)
+        print(" 💡 No phone currently connected. Displaying saved hardware profiles from vault:\n")
+        list_all_devices()
+        return
 
     target_serial = auth[0]["serial"]
     fp = get_device_fingerprint(target_serial)
