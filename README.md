@@ -1,201 +1,788 @@
 <p align="center">
-  <img src="assets/alfi_poster.webp" alt="ALFi - Android Lag Fixer" width="750" />
+  <img src="assets/alfi_poster.webp" alt="ALFi - open-source Android lag fixer, debloater and security auditor using ADB with no root" width="750" />
 </p>
 
-# ⚡ ALFi — Android Lag Fixer & Security Optimizer (Non-Root ADB)
+<h1 align="center">⚡ ALFi — Android Lag Fixer, Debloater & Security Auditor</h1>
+
+<p align="center">
+  <strong>Fix a slow, laggy Android phone over ADB — no root, fully reversible, and proven with real benchmark data.</strong>
+</p>
 
 <p align="center">
   <a href="https://github.com/pavnxet/alfi/actions/workflows/ci.yml">
     <img src="https://github.com/pavnxet/alfi/actions/workflows/ci.yml/badge.svg" alt="CI Status" />
   </a>
   <img src="https://img.shields.io/badge/Release-v1.2.0-00b0ff?style=flat&logo=github" alt="Release v1.2.0" />
-  <img src="https://img.shields.io/badge/Tests-94%20Passed-success?style=flat" alt="94 Tests Passing" />
+  <img src="https://img.shields.io/badge/Tests-107%20Passed-success?style=flat" alt="107 Tests Passing" />
   <img src="https://img.shields.io/badge/Platform-Android_9_--_17+-3DDC84?style=flat&logo=android&logoColor=white" alt="Android 9 to 17+" />
   <img src="https://img.shields.io/badge/Python-3.9+-3776AB?style=flat&logo=python&logoColor=white" alt="Python 3.9+" />
   <img src="https://img.shields.io/badge/Root-No_Root_Required-blue?style=flat" alt="No Root Required" />
-  <img src="https://img.shields.io/badge/Safety-Disables_Preserve_Data-success?style=flat" alt="Safe & Reversible" />
+  <img src="https://img.shields.io/badge/Safety-Disables_Preserve_Data-success?style=flat" alt="Safe and Reversible" />
   <img src="https://img.shields.io/badge/CLI-alfi-00e676?style=flat" alt="CLI Command" />
   <img src="https://img.shields.io/badge/License-MIT-orange?style=flat" alt="MIT License" />
 </p>
 
 <p align="center">
-  <strong>ALFi is the definitive open-source Android lag fixer, multi-tier optimizer, safe OEM debloater, zRAM tuner, and security auditor.</strong><br />
-  <em>Diagnose CPU bottlenecks, eliminate zRAM compression thrashing, detect accessibility trojans and ghost adware, prove framerate gains via real benchmark framestats, and boost UI responsiveness via standard ADB text streams.</em>
+  <a href="#quick-start">Quick Start</a> ·
+  <a href="#features">Features</a> ·
+  <a href="#real-world-benchmark-results">Benchmarks</a> ·
+  <a href="#the-4-optimization-modes">Modes</a> ·
+  <a href="#security-and-malware-auditing">Security Audit</a> ·
+  <a href="#safety-rollback-and-rescue">Rollback</a> ·
+  <a href="#faq">FAQ</a>
 </p>
 
 ---
 
-## ⚡ Why Do Android Phones Lag Over Time?
+**ALFi (Android Lag Fixer)** is a free, open-source Python toolkit that speeds up slow Android phones using nothing but standard **ADB** (Android Debug Bridge) commands. It diagnoses *why* your phone lags, safely **disables OEM bloatware and background telemetry**, tunes **zRAM / virtual RAM pressure**, speeds up **UI animations**, and **audits your device for accessibility-service trojans, ghost adware and stalkerware** — then proves the improvement with real frame-pacing and battery measurements.
 
-Most Android speedup guides recommend aggressive factory resets, third-party "cleaner" apps (which are often adware themselves), or risky root modifications that trip Knox, Widevine L1, and banking security.
+It works on **Samsung (One UI), Xiaomi (MIUI / HyperOS), Realme / Oppo / OnePlus (ColorOS / OxygenOS) and stock Google Pixel** devices, requires **zero root**, has **zero external pip dependencies** (100% Python standard library), and every change can be undone with a single command.
 
-In reality, Android lag and micro-stutters stem from 4 distinct kernel and userland bottlenecks:
+### At a Glance
 
-1. **zRAM Compression Overhead Under Memory Pressure**: OEMs (Samsung RAM Plus, Xiaomi Memory Extension, Realme RAM Expansion) expand virtual memory by sizing up in-memory compressed **zRAM**. On mid-range and budget processors with weak CPU clusters (Cortex-A53/A55), forcing more pages into zRAM causes heavy CPU spikes in `kswapd0` during LZ4/ZSTD compression cycles, competing with the UI thread and causing 1–2 second touch stutters.
-2. **Aggressive Background Telemetry & Adware**: Hidden OEM daemons (Glance wallpaper carousels, Xiaomi analytics, Meta/Facebook pre-installed app installers, HeyTap MCS) wake the CPU hundreds of times per hour, preventing deep-sleep C-states and causing thermal throttling.
-3. **Accessibility Service & Permission Abuse**: Rogue apps, ghost background services, and banking trojans exploit `BIND_ACCESSIBILITY_SERVICE` and overlay privileges (`SYSTEM_ALERT_WINDOW`), intercepting window managers and causing thousands of compositor page faults.
-4. **Sluggish Default UI Animation Scales**: Default `1.0x` window, transition, and animator scales add artificial latency to gesture navigation and app launch animations.
-
-**Android Lag Fixer** solves these bottlenecks at the root level using non-destructive, non-root ADB protocols.
-
----
-
-## 🚀 Key Features & Capabilities
-
-### 🛡️ 1. Absolute Host PC Isolation
-* **Zero Binary Execution on Host**: The toolkit **never downloads, mounts, or executes Android binaries (`.apk`, `.dex`, `.so`) on your PC**.
-* **Pure ADB Text Stream Auditing**: All scans, permission audits, and telemetry freezes execute remotely inside the Android userland using standard, sandboxed ADB shell commands (`dumpsys`, `pm`, `settings`).
-
-### 🔍 2. Deep Root-Cause Performance Diagnostics
-* **True Kernel Run-Queue Profiling**: Measures 1m, 5m, and 15m CPU load averages to identify true thermal and process saturation.
-* **Infamous Background Hogs Detection**: Automatically detects notorious CPU loopers (Microsoft Link to Windows looping at >100% CPU, McAfee Device Security, MacroDroid compositor hooks).
-* **ZRAM Memory Pressure Analysis**: Inspects physical RAM headroom, active swap compression saturation, and kernel swap daemon activity.
-
-### 🏁 3. Objective Frame Pacing & Jank Benchmark Harness
-* **Real-World Framerate & Frame Pacing (`dumpsys gfxinfo framestats`)**: Measures actual frame durations directly from the Android graphics compositor.
-* **Dynamic Refresh Rate Scaling (60Hz / 90Hz / 120Hz / 144Hz)**: Automatically reads display refresh rate and calculates precise jank thresholds (19.1ms @ 60Hz, 12.8ms @ 90Hz, 9.6ms @ 120Hz).
-* **Accurate 1% Low FPS**: Computes true average framerate across the slowest 1% worst frames, P50/P90/P99 latency, and dropped frame counts.
-* **Before-vs-After Comparison Table**: Run `--compare before.json after.json` to prove exact latency improvements with hard data.
-
-### 🕵️ 4. Security & Sketchy Apps Auditor
-* **Accessibility Service Hijackers**: Audits apps holding screen-reading and click-simulation permissions (primary vector for banking trojans like TeaBot and stalkerware).
-* **Device Administrator Inspection**: Detects unauthorized apps registered under `DevicePolicyManager` preventing uninstallation.
-* **Hidden Ghost App Finder**: Exposes stealth apps running background background services without home screen launcher icons.
-* **Dangerous Permission Cluster Flags**: Flags high-risk permission combinations (Screen Overlay + SMS interception + Background location).
-* **Instant Quarantine**: Safely freezes flagged apps in one command without host interaction.
-
-### 🔄 5. Version-Aware Resilience & Reversibility (Android 6 to 17+)
-* **Android 17+ (SDK 37+) Adaptation**: Automatically detects Android 17's hard-block on user-space system uninstalls and falls back gracefully to `disable-user`.
-* **State Verification & Fallback Ladder**: Verifies resulting package states via `dumpsys package` to catch silent exit-code-0 failures on HyperOS and One UI.
-* **Pre-Flight Snapshot Manifest**: Automatically creates a timestamped JSON backup manifest before any package modification.
-* **1-Click Rollback**: Restore any or all packages at any time via `python scripts/restore.py --manifest latest`. Disabling is 100% data-preserving (app data remains intact).
-* **Strict Allowlist**: Guaranteed preservation for OTA Update engines (`com.oplus.ota`, `com.google.android.configupdater`), OEM account logins (Samsung Account, HeyTap Cloud), banking apps, and Widevine L1 DRM.
-
-### ⚡ 6. 2x Snappier UI Compositor
-* Tunes Window Animation, Transition Animation, and Animator Duration scales from default `1.0x` to `0.5x` for instant touch and gesture feedback.
-* Safely trims stale package caches without wiping user data.
-
-### 📱 7. Multi-Device Audit Vault & Collision Prevention
-* **Hardware Chip Fingerprinting**: Employs physical hardware serial numbers (`ro.serialno`) and Android installation IDs (`android_id`) to uniquely identify devices.
-* **No Name Collision**: Prevents confusion when managing multiple family phones or client devices sharing the same model name.
-* **Local Private Vault**: Tracks the history of fixes, benchmarks, and disabled packages per device locally (automatically gitignored for privacy).
+| | |
+| :--- | :--- |
+| **What it fixes** | UI stutter, slow app launches, high CPU load, memory pressure, background battery drain, adware, OEM telemetry |
+| **What you need** | A PC (Windows / macOS / Linux) with Python 3.9+ and ADB, plus a phone with USB or Wireless Debugging on |
+| **Dependencies** | **Zero pip dependencies** — 100% pure Python standard library |
+| **Root required?** | **No** — standard non-root ADB text protocol only |
+| **Is it reversible?** | **Yes** — packages are *disabled*, not deleted. Manifest is saved & `fsync`ed before the first change |
+| **Does it prove results?** | **Yes** — before/after frame pacing (1% low FPS, jank %), RAM, swap, CPU load and wakelock audits |
+| **Supported Android** | Android 9 – 17+ (also validated on Android 8.1) |
 
 ---
 
-## 📊 Real-World Benchmark Results
-
-### Device 1: Budget Entry Phone (**Redmi A1+ / Helio A22 / 2GB RAM** running Android 12 Go)
-
-| Metric | Before Optimization | After Optimization | Real-World Impact |
-| :--- | :--- | :--- | :--- |
-| **Available Physical RAM** | `769.5 MB` | **`989.9 MB`** | **+220 MB free memory (+28.6% gain)** |
-| **Active ZRAM / Swap** | `684.1 MB` | **`581.8 MB`** | **-102.3 MB swap pressure reclaimed** |
-| **Kernel Swap Daemon (`kswapd0`)** | `2.5%` CPU | **`1.5%` CPU** | **-40% reduction in background thrashing** |
-| **UI Animation Latency** | `1.0x` (Sluggish) | **`0.5x` (Snappy)** | **2x faster app opening & gesture speed** |
-| **Lockscreen & Meta Ads** | Running 24/7 | **0 Wakelocks** | **Noticeably cooler phone & longer battery** |
-
-### Device 2: Legacy Samsung Phone (**Galaxy J7 Max / SM-G615F / 4GB RAM** running Android 8.1.0)
-
-| Metric | Before Optimization | After Optimization | Real-World Impact |
-| :--- | :--- | :--- | :--- |
-| **System Server CPU Load** | `152%` (Thermal Throttling) | **`31%`** | **-79.6% drop in core OS CPU consumption** |
-| **Google Play Services CPU** | `133%` | **`24%`** | **-82.0% reduction in background polling** |
-| **IronSource Aura OEM Adware** | `9.4%` CPU (Looping) | **Killed (0%)** | **Eliminated rogue background app-installer** |
-| **Available Physical RAM** | `2078.7 MB` | **`2131.0 MB`** | **+52.3 MB memory headroom reclaimed** |
-| **1-Minute CPU Load Average** | `16.86` (Extreme Saturation) | **`11.04`** | **-34.5% overall system load reduction** |
-
----
-
-## 🎮 The 4 Calibrated Optimization Modes (Low, Medium, High, Ultra)
-
-Instead of forcing users to guess which tweaks to run, **ALFi** features an interactive, **Mode-First Architecture**. Before applying changes, the terminal asks you to select between four calibrated tiers. High-risk, destructive, or breaking modifications are strictly quarantined inside **Ultra** behind explicit confirmation gates and dependency graph checks.
-
-```text
-======================================================================
- 🚀 ANDROID LAG FIXER - SELECT OPTIMIZATION MODE
-======================================================================
-  [1] 🟢 Low (Zero Risk / Safe Baseline)
-       Risk: None | Audience: Casual users, family phones, work profiles
-       Details: Carrier stubs & adware only, cache trim, 0.75x animations.
-
-  [2] 🟡 Medium (Balanced / Recommended Daily Driver)
-       Risk: Low | Audience: Everyday smartphone users wanting noticeable smoothness
-       Details: Low + OEM telemetry & tracking, 0.5x animations, ART speed-profile, social AppOps limits.
-
-  [3] 🟠 High (Aggressive Smoothness & Battery)
-       Risk: Moderate | Audience: Power users, older devices, budget 2GB-4GB hardware
-       Details: Medium + vendor bloat (Bixby, Joyose), App Standby restricted, deep Doze, Virtual RAM off guidance.
-
-  [4] 🔴 Ultra (Extreme / Power Users / Probable Risk)
-       Risk: High | Audience: Enthusiasts, secondary devices, dedicated gaming rigs
-       Details: High + OEM cloud & duplicate stores, 0.0x animations, full system ART compile.
-======================================================================
-```
-
-### Detailed Mode Comparison Matrix
-
-| Feature / Vector | 🟢 Mode 1: Low (Safe Baseline) | 🟡 Mode 2: Medium (Recommended) | 🟠 Mode 3: High (Aggressive) | 🔴 Mode 4: Ultra (High-Risk) |
-| :--- | :--- | :--- | :--- | :--- |
-| **Philosophy & Target** | Zero risk; impossible to break anything. Safe for family & work profiles. | Balanced daily driver. Eliminates ad tracking & micro-stutter with zero feature loss. | Aggressive smoothness & battery on budget/older hardware (2GB–4GB RAM). | Maximum stripped configuration for gaming benchmarks & secondary devices. |
-| **Packages Disabled** | Carrier bloat & marketing preloads only (`Recommended`: Aura, carrier stubs). | Low + OEM telemetry & tracking daemons (`Recommended`: Glance, MSA, Meta). | Medium + non-critical vendor bloat (`Advanced`: Bixby, AR Emoji, Joyose). | High + OEM cloud sync, duplicate stores, secondary keyboards/launchers (`Expert`). |
-| **AppOps Background Limits** | Untouched. | `RUN_IN_BACKGROUND=ignore` on social/shopping hogs (Facebook, Instagram, Truecaller). | Background execution blocked on all detected non-essential apps. | Maximum background execution freeze across third-party applications. |
-| **App Standby Buckets** | Untouched. | `rare` for social/shopping background pollers. | `restricted` (capped daily execution on Android 12+). | `restricted` across all non-system user applications. |
-| **ART Ahead-Of-Time Pre-Compile** | Default JIT. | `speed-profile` on top foreground user apps. | `speed` compilation on heavy apps & launcher. | Full system & user app `speed` AOT compilation. |
-| **Window & Transition Animations** | `0.75x` (gentle acceleration). | `0.5x` (snappy standard). | `0.5x` (snappy standard). | `0.0x` (animations off for instant app switching). |
-| **Doze & Battery Policy** | Untouched. | Clean telemetry pollers from `deviceidle whitelist`. | Enforce rapid Deep Doze on screen-off + allowlist cleanup. | Force Deep Doze + stripped allowlist + background alarm caps. |
-| **Virtual RAM (zRAM / RAM Plus)** | Untouched. | Untouched. | Guided disabling in Settings (stops CPU thrashing). | Full disabling guidance for zero paging latency. |
-| **Safety Gate Required** | Automatic (1-click). | Automatic (1-click). | Pre-flight manifest snapshot + summary preview. | **Double Gate: Dependency Graph Validation + Typing 'I UNDERSTAND'**. |
+## Quick Start
 
 ```bash
-# Run interactively (prompts for mode selection):
-python scripts/modes.py
+# 1. Install (needs Python 3.9+ and ADB on your PC)
+pipx install git+https://github.com/pavnxet/alfi.git
 
-# Or specify mode directly:
-python scripts/modes.py --mode medium
-python scripts/modes.py --mode high --dry-run
+# 2. Plug in your phone with USB Debugging enabled, then launch the dashboard
+alfi
+
+# 3. Or run the recommended optimization directly (preview first, then apply)
+alfi-modes --mode medium --dry-run
+alfi-modes --mode medium
+```
+
+> **Something went wrong?** Undo everything from your latest session with `python scripts/restore.py --manifest latest`.
+> New to ADB? Follow the [step-by-step connection guide](#step-1-connect-your-phone).
+
+---
+
+## Table of Contents
+
+- [Why Do Android Phones Lag Over Time?](#why-do-android-phones-lag-over-time)
+- [Features](#features)
+- [Real-World Benchmark Results](#real-world-benchmark-results)
+- [The 4 Optimization Modes](#the-4-optimization-modes)
+- [Installation](#installation)
+- [Usage Guide](#usage-guide)
+- [Security and Malware Auditing](#security-and-malware-auditing)
+- [Safety, Rollback and Rescue](#safety-rollback-and-rescue)
+- [Under the Hood: Advanced Engines](#under-the-hood-advanced-engines)
+- [Compatibility](#compatibility)
+- [How ALFi Compares](#how-alfi-compares)
+- [FAQ](#faq)
+- [Repository Structure](#repository-structure)
+- [Contributing, Security and License](#contributing-security-and-license)
+
+---
+
+## Why Do Android Phones Lag Over Time?
+
+Most Android speed-up advice falls into three bad categories: factory resets, third-party "cleaner" apps (which are frequently adware themselves), or rooting, which can trip Knox, Widevine L1 and banking-app security checks.
+
+In practice, Android lag and micro-stutter usually come from **four distinct bottlenecks**:
+
+| # | Bottleneck | What actually happens | Typical symptom |
+| :-: | :--- | :--- | :--- |
+| 1 | **zRAM compression overhead** | OEM "virtual RAM" features (Samsung RAM Plus, Xiaomi Memory Extension, Realme RAM Expansion) push more pages into compressed in-memory swap. On weak mid-range and budget CPUs (Cortex-A53 / A55), `kswapd0` burns CPU on LZ4 / ZSTD compression and competes with the UI thread. | 1–2 second touch stutters, slow app switching |
+| 2 | **Background telemetry and adware** | Hidden OEM daemons (Glance wallpaper carousels, Xiaomi analytics, pre-installed Meta / Facebook installers, HeyTap MCS) wake the CPU hundreds of times per hour, blocking deep-sleep states. | Heat, thermal throttling, battery drain |
+| 3 | **Accessibility and overlay abuse** | Rogue apps and banking trojans abuse `BIND_ACCESSIBILITY_SERVICE` and `SYSTEM_ALERT_WINDOW`, hooking the window manager and triggering thousands of compositor page faults. | Random lag, phantom taps, security risk |
+| 4 | **Slow default animation scales** | Default `1.0x` window, transition and animator scales add artificial latency to gestures and app launches. | Phone *feels* slow even when it isn't |
+
+ALFi addresses each of these with **non-destructive, non-root ADB commands**.
+
+---
+
+## Features
+
+### 🔍 Root-Cause Performance Diagnostics
+- **Kernel run-queue profiling** — measures 1m / 5m / 15m CPU load averages to separate real saturation from noise.
+- **Background hog detection** — flags notorious CPU loopers such as Microsoft *Link to Windows* (>100% CPU), McAfee Device Security and MacroDroid compositor hooks.
+- **zRAM memory-pressure analysis** — inspects RAM headroom, swap compression saturation and `kswapd0` activity.
+
+### 🏁 Objective Frame-Pacing and Jank Benchmarking
+- Measures real frame durations from the graphics compositor via `dumpsys gfxinfo framestats`.
+- **Automated swipe gestures** — automatically executes smooth hardware scroll gestures over ADB so stationary screens capture 200–400 frames reliably without manual touch input.
+- **Refresh-rate aware** (60 / 90 / 120 / 144 Hz) — jank thresholds are dynamically calculated per display (19.1 ms @ 60 Hz, 12.8 ms @ 90 Hz, 9.6 ms @ 120 Hz).
+- Reports **1% Low FPS**, P50 / P90 / P99 latency and dropped-frame counts.
+- **Before-vs-after comparison:** `python scripts/bench.py --compare before.json after.json`.
+
+### 🕵️ Security and Sketchy-App Auditing
+- Accessibility-service hijacker detection (the main vector for banking trojans such as TeaBot, and for stalkerware).
+- Device Administrator inspection for apps that block uninstallation.
+- Ghost-app finder for background services with no launcher icon.
+- Dangerous permission-cluster flags (screen overlay + SMS interception + background location).
+- One-command **quarantine** (freeze) of any flagged app.
+
+### 🧹 Safe OEM Debloating
+- Profiles for Samsung, Xiaomi, Realme / Oppo / OnePlus and Google, plus an `auto` detector.
+- A **package dependency graph** blocks disabling anything other apps rely on.
+- Community package definitions can be merged from [UAD-ng](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation) with schema validation.
+
+### 🔄 Version-Aware Resilience
+- **Android 17+ (SDK 37+):** detects the hard block on user-space system uninstalls and falls back to `disable-user`.
+- **State verification and fallback ladder:** prioritizes per-user `pm list packages -e/-d/-u` and falls back to `dumpsys package` to catch silent "exit code 0" failures on HyperOS and One UI.
+- **Strict allowlist:** OTA engines (`com.oplus.ota`, `com.google.android.configupdater`), OEM account logins (Samsung Account, HeyTap Cloud), banking apps and Widevine L1 DRM are always preserved.
+
+### ⚡ Snappier UI and Battery
+- Window, transition and animator scales tuned from `1.0x` to `0.5x`.
+- Safe trimming of stale package caches without wiping user data.
+- Deep Doze enforcement and wakelock reduction, with measurable battery proof.
+
+### 🛡️ Host PC Isolation
+- **ALFi never downloads, mounts or executes Android binaries (`.apk`, `.dex`, `.so`) on your computer.**
+- All scans, permission audits and telemetry freezes run *inside* the phone through sandboxed ADB shell text streams (`dumpsys`, `pm`, `settings`).
+
+### 📱 Multi-Device Audit Vault
+- Devices are identified by hardware serial (`ro.serialno`) and `android_id`, so two phones of the same model never collide.
+- Fix history, benchmarks and disabled packages are tracked per device in a local vault that is **gitignored by default**.
+
+---
+
+## Real-World Benchmark Results
+
+Measured with ALFi's own diagnostics before and after optimization.
+
+### Device 1 — Budget Entry Phone
+**Redmi A1+ · Helio A22 · 2 GB RAM · Android 12 Go**
+
+| Metric | Before | After | Impact |
+| :--- | :--- | :--- | :--- |
+| **Available physical RAM** | `769.5 MB` | **`989.9 MB`** | **+220 MB free (+28.6%)** |
+| **Active zRAM / swap** | `684.1 MB` | **`581.8 MB`** | **−102.3 MB swap pressure** |
+| **`kswapd0` CPU usage** | `2.5%` | **`1.5%`** | **−40% background thrashing** |
+| **UI animation scale** | `1.0x` | **`0.5x`** | **~2x faster app opening and gestures** |
+| **Lockscreen and Meta ad services** | Running 24/7 | **0 wakelocks** | **Cooler phone, longer battery** |
+
+### Device 2 — Legacy Samsung Phone
+**Galaxy J7 Max · SM-G615F · 4 GB RAM · Android 8.1.0**
+
+| Metric | Before | After | Impact |
+| :--- | :--- | :--- | :--- |
+| **System server CPU load** | `152%` (thermal throttling) | **`31%`** | **−79.6% core OS CPU use** |
+| **Google Play Services CPU** | `133%` | **`24%`** | **−82.0% background polling** |
+| **IronSource Aura OEM adware** | `9.4%` (looping) | **Killed (0%)** | **Rogue app-installer eliminated** |
+| **Available physical RAM** | `2078.7 MB` | **`2131.0 MB`** | **+52.3 MB headroom** |
+| **1-minute CPU load average** | `16.86` (extreme saturation) | **`11.04`** | **−34.5% system load** |
+
+> Results vary by device, OEM and installed apps. Run your own before/after with `bench.py` — see [Benchmark Your Phone](#3-benchmark-before-and-after).
+
+---
+
+## The 4 Optimization Modes
+
+ALFi is **mode-first**: you choose a calibrated risk tier instead of guessing which tweaks to run. Anything high-risk is quarantined inside **Ultra** behind explicit confirmation gates and dependency-graph checks.
+
+```text
+╭────────────────────────────────────────────────────────────────────────╮
+│                 ⚡ CHOOSE OPTIMIZATION ARCHITECTURE ⚡                 │
+╰────────────────────────────────────────────────────────────────────────╯
+
+  [ 1 ] 🟢 LOW MODE ─────── SAFE BASELINE (Zero Risk)
+        • Scope   : Carrier adware stubs, 0.75x animations, stale cache trim
+        • Target  : Family phones, work profiles, zero tolerance for feature changes
+
+  [ 2 ] 🟡 MEDIUM MODE ──── BALANCED DAILY DRIVER (Recommended)
+        • Scope   : Low + OEM telemetry (Glance, Meta, MSA), 0.5x animations,
+                    ART speed-profile on top user apps, social AppOps limits
+        • Target  : Everyday smartphones wanting snappy UI & cooler battery
+
+  [ 3 ] 🟠 HIGH MODE ────── AGGRESSIVE ACCELERATION (Sluggish/Budget Devices)
+        • Scope   : Medium + vendor bloat (Bixby, Joyose), App Standby RESTRICTED,
+                    Deep Doze allowlist cleanup, Virtual RAM off guidance
+        • Target  : Power users, older devices, budget 2GB-4GB hardware with lag
+
+  [ 4 ] 🔴 ULTRA MODE ───── EXTREME STRIP-DOWN (High-Risk / Power Users)
+        • Scope   : High + duplicate OEM accounts (Samsung/Mi ID), duplicate stores,
+                    secondary keyboards/launchers, 0.0x zero animations, full AOT
+        • Safety  : Double-Gate: Dependency Graph Check + Requires 'I UNDERSTAND'
+
+  [ 0 ] 🔙 Return to Main Menu
+──────────────────────────────────────────────────────────────────────────
+```
+
+### Pre-Flight Optimization Audit Report Gate
+Before any optimization touches your phone, ALFi scans your device and renders a transparent pre-flight report card:
+
+```text
+╭────────────────────────────────────────────────────────────────────────╮
+│  📋 PRE-FLIGHT OPTIMIZATION AUDIT REPORT : [🟡 MEDIUM (BALANCED)]      │
+╰────────────────────────────────────────────────────────────────────────╯
+
+  • Target Device      : REALME RMX3867 (Android 16, SDK 36)
+  • Debloat Candidates : 6 bloatware & telemetry packages identified
+  • AppOps Restrictions: 3 background hogs (Instagram, Twitter, Truecaller)
+  • UI Animation Scale : Set to 0.5x (2x snappier gesture response)
+  • Cache Maintenance  : Trim stale system caches without data loss
+  • ART Pre-Compile    : Speed-profile AOT compilation on 3 top apps
+  • Rollback Safety Net: Snapshot manifest written & fsynced before first mutation
+──────────────────────────────────────────────────────────────────────────
+
+  [ Y ] ✅ Confirm and Apply Optimization
+  [ D ] 🔍 View Detailed Package List (Names & Explanations)
+  [ N ] 🚪 Cancel and Return to Menu (No changes made)
+──────────────────────────────────────────────────────────────────────────
+```
+
+- Press **`Y`** to confirm and apply.
+- Press **`D`** to inspect the full list of detected packages, package explanations, and AppOps throttles.
+- Press **`N`** to abort cleanly with zero modifications.
+- Running headless or in CI? Pass `--yes` to acknowledge unattended execution.
+
+<details>
+<summary><strong>📋 Detailed mode comparison matrix (click to expand)</strong></summary>
+
+| Feature / Vector | 🟢 Low | 🟡 Medium (Recommended) | 🟠 High | 🔴 Ultra |
+| :--- | :--- | :--- | :--- | :--- |
+| **Philosophy** | Zero risk; safe for family and work profiles. | Balanced daily driver; no ad tracking, no micro-stutter, no feature loss. | Aggressive smoothness and battery for 2–4 GB / older hardware. | Maximum strip-down for gaming benchmarks and secondary devices. |
+| **Packages disabled** | Carrier bloat and marketing preloads (`Recommended`: Aura, carrier stubs). | Low + OEM telemetry and tracking (`Recommended`: Glance, MSA, Meta). | Medium + non-critical vendor bloat (`Advanced`: Bixby, AR Emoji, Joyose). | High + OEM cloud sync, duplicate stores, secondary keyboards / launchers (`Expert`). |
+| **AppOps background limits** | Untouched. | `RUN_IN_BACKGROUND=ignore` on social / shopping hogs (Facebook, Instagram, Truecaller). | Background execution blocked on all detected non-essential apps. | Maximum background freeze across third-party apps. |
+| **App Standby buckets** | Untouched. | `rare` for social / shopping pollers. | `restricted` (Android 12+). | `restricted` for all non-system user apps. |
+| **ART AOT pre-compile** | Default JIT. | `speed-profile` on top foreground apps. | `speed` on heavy apps and launcher. | Full system and user `speed` compilation. |
+| **Animations** | `0.75x` | `0.5x` | `0.5x` | `0.0x` (off) |
+| **Doze and battery** | Untouched. | Clean telemetry pollers from `deviceidle whitelist`. | Rapid Deep Doze on screen-off + allowlist cleanup. | Forced Deep Doze + stripped allowlist + alarm caps. |
+| **Virtual RAM (zRAM / RAM Plus)** | Untouched. | Untouched. | Guided disable in Settings. | Full disable guidance (zero paging latency). |
+| **Safety gate** | Pre-flight audit report. | Pre-flight audit report. | Pre-flight manifest + summary preview. | **Double gate:** dependency-graph validation + typing `I UNDERSTAND`. |
+
+</details>
+
+```bash
+python scripts/modes.py                       # interactive mode picker
+python scripts/modes.py --mode medium         # run a specific mode with audit gate
+python scripts/modes.py --mode high --dry-run # preview without changing anything
+python scripts/modes.py --mode medium --yes   # unattended automated run
 python scripts/modes.py --mode ultra --force-ultra
 ```
 
 ---
 
-## 💡 Upstream Innovations & Community Inspirations
+## Installation
 
-**ALFi** integrates battle-tested paradigms from premier open-source Android tooling:
+### Prerequisites
 
-### 1. 🧩 Package Dependency Graph Engine *(Inspired by UAD-ng)*
-* **Problem**: Blindly disabling vendor packages breaks dependent applications (e.g. disabling Samsung Account breaks Galaxy Wearable and Galaxy Store; disabling Google Services Framework breaks Google Play).
-* **Remediation**: `package_database.json` maintains an explicit `"dependencies"` and `"dependents"` schema. Before disabling any package, the dependency resolver checks if dependent apps are installed. If a dependent remains active, disabling is **strictly blocked** with an actionable warning. Fundamental OS services (keyboards, launchers, WebViews, telephony) are hard-whitelisted.
+| Requirement | Details |
+| :--- | :--- |
+| **Python** | 3.9+ (CI-tested on 3.10 – 3.13 across Ubuntu, Windows and macOS) |
+| **Dependencies** | **Zero third-party pip dependencies** — uses 100% Python standard library (`subprocess`, `re`, `json`, `os`, `shutil`) |
+| **ADB** | Windows: Android SDK Platform-Tools or standalone `adb.exe` · macOS: `brew install android-platform-tools` · Linux: `sudo apt install adb` |
+| **Phone** | Developer Options enabled with USB Debugging (or Wireless Debugging on Android 11+) |
 
-### 2. 📱 Persistent On-Device Manifests *(Inspired by Canta)*
-* **Problem**: If an emergency occurs while traveling without a PC, ADB desktop restore manifests are unreachable.
-* **Remediation**: In addition to saving backup manifests to `backups/` on your PC, the toolkit automatically mirrors a backup snapshot to `/sdcard/.lagfixer_manifest.json` on the device. This enables 100% rootless on-device restoration via Shizuku (`rish`) without needing a computer.
+### Option A — Install globally with pipx (recommended)
 
-### 3. 🔋 Deep Doze Enforcement & Allowlist Auditor (`scripts/doze_boost.py`) *(Inspired by Android DeviceIdle & Brevent)*
-* **Problem**: Rogue third-party apps and OEM bloatware frequently add themselves to the Android battery optimization whitelist (`dumpsys deviceidle whitelist`), bypassing Doze sleep states and draining battery while the screen is off.
-* **Remediation**: Audits the Doze allowlist, strips rogue third-party pollers via `cmd deviceidle whitelist -<pkg>`, and triggers rapid Deep Doze state transitions on screen-off (`cmd deviceidle force-idle`). Includes 1-click snapshot restore.
+```bash
+pipx install git+https://github.com/pavnxet/alfi.git
+```
 
-### 4. ⚡ Empirical Battery Drain & Wakelock Proof (`scripts/power_audit.py`) *(Inspired by Google BatteryStats & Battery Historian)*
-* **Problem**: Users want empirical proof that background optimizations actually save battery.
-* **Remediation**: Parses `dumpsys batterystats` to quantify partial background wakelocks, CPU wakeup counts, and computed drain in mAh/hr. Provides a before-vs-after comparison mode:
-  ```text
-  ======================================================================
-   ⚡ EMPIRICAL BATTERY & WAKELOCK REDUCTION AUDIT (BEFORE vs AFTER)
-  ======================================================================
-   Metric                    | Before       | After        | Savings       
-  ----------------------------------------------------------------------
-   Partial Wakelocks         | 142          | 18           | -87.3%
-   Wakelock Active (ms)      | 930000       | 120000       | -87.1%
-   Drain Rate (mAh/hr)       | 38.0         | 12.0         | -68.4%
-  ======================================================================
-  ```
+This installs the following global CLI commands:
 
-### 5. 🖥️ Real-Time Screen Mirroring Bridge *(Inspired by Scrcpy)*
-* **Problem**: Validating touch responsiveness and micro-stutter requires constantly glancing back and forth between monitor and handset.
-* **Remediation**: The terminal wizard automatically detects local `scrcpy` installations (including in downloads) and exposes a 1-click launcher (`[S] 📱 Launch Real-Time Screen Mirror`) to mirror and control your phone directly from your desktop.
+| Command | Purpose |
+| :--- | :--- |
+| `alfi` | Interactive control dashboard |
+| `alfi-modes` | 4-tier optimization modes (Low / Medium / High / Ultra) |
+| `alfi-power` | Battery drain and wakelock proof |
+| `alfi-doze` | Deep Doze and `deviceidle` allowlist cleaner |
+| `alfi-bench` | Frame-pacing and jank benchmark suite |
+| `alfi-rescue` | Emergency rescue launcher |
+| `alfi -s <serial>` | Target a specific USB or wireless device |
+
+### Option B — Run from source
+
+```bash
+git clone https://github.com/pavnxet/alfi.git
+cd alfi
+python scripts/wizard.py
+```
+
+### The Interactive Dashboard
+
+Prefer menus over flags? Run `alfi` (or `python scripts/wizard.py`) for a guided, cyber-themed dashboard covering modes, diagnostics, benchmarks, debloating, pre-compilation, AppOps limits, Shizuku export, screen mirroring and multi-device switching.
+
+Press **`D`** to open the **Device Manager**: list attached devices, check authorization state (with guidance for pending RSA prompts), pair Android 11+ phones with a 6-digit code, or switch targets on the fly.
+
+```text
+╭────────────────────────────────────────────────────────────────────────╮
+│               ⚡ ALFi DEVICE MANAGER & TARGET SELECTOR ⚡               │
+╰────────────────────────────────────────────────────────────────────────╯
+  [ 1 ] 🟢 ACTIVE TARGET : SAMSUNG GALAXY S23 (USB)
+  [ 2 ] ⚪ AVAILABLE     : REDMI 220733SI (WIRELESS - 192.168.1.55:5555)
+  [ R ] 🔄 Refresh Device Scan
+  [ W ] 📶 Pair / Connect Wireless Phone (IP:Port + Pairing Code)
+  [ 0 ] 🔙 Return to Dashboard
+```
+
+### Step 1: Connect Your Phone
+
+**Method A — USB cable (easiest)**
+
+1. On the phone, open **Settings → About Phone** and tap **Build Number** (or **MIUI / OS Version**) **7 times** to unlock Developer Options.
+2. Open **Settings → Developer Options** and enable **USB Debugging**.
+3. Connect with a *data* cable, unlock the screen, tick **"Always allow from this computer"** and tap **OK**.
+4. Verify the connection:
+
+   ```bash
+   python scripts/connect.py
+   ```
+
+**Method B — Wireless Debugging (no cable, Android 11+)**
+
+1. Put the PC and phone on the **same Wi-Fi network**.
+2. Open **Settings → Developer Options → Wireless Debugging** and turn it **ON**.
+3. Tap **"Pair device with pairing code"** to get the pairing IP, port and 6-digit code.
+4. Pair and connect:
+
+   ```bash
+   python scripts/connect.py --pair 192.168.1.50:37891 123456
+   python scripts/connect.py --connect 192.168.1.50:41235
+   ```
+
+Need drivers or troubleshooting? See [`references/connection_guide.md`](references/connection_guide.md).
 
 ---
 
-## 📂 Repository Structure
+## Usage Guide
+
+A typical session follows **diagnose → audit → optimize → verify**.
+
+### Step 2: Diagnose
+
+#### 1. Find root-cause lag and CPU bottlenecks
+```bash
+python scripts/diagnose.py
+```
+Profiles CPU run queues, checks memory pressure and lists the top CPU-burning processes.
+
+#### 2. Audit for sketchy apps and accessibility hijackers
+```bash
+python scripts/security_audit.py
+
+# Freeze a suspicious app immediately:
+python scripts/security_audit.py --quarantine <package_name>
+```
+Details in [Security and Malware Auditing](#security-and-malware-auditing).
+
+#### 3. Benchmark before and after
+```bash
+# Baseline BEFORE optimizing:
+python scripts/bench.py --app com.android.settings --duration 8 --scroll --save before.json
+```
+Captures UI frame pacing, jank percentage, P90 latency and 1% Low FPS. After optimizing, repeat with `--save after.json`, then compare:
+```bash
+python scripts/bench.py --compare before.json after.json
+```
+
+### Step 3: Optimize
+
+<details open>
+<summary><strong>1. Safe OEM debloating and telemetry elimination</strong></summary>
+
+```bash
+# Preview (safe dry run):
+python scripts/optimize.py --profile auto --dry-run
+
+# Apply:
+python scripts/optimize.py --profile auto
+```
+
+| Flag | Description |
+| :--- | :--- |
+| `--dry-run` | Preview changes without modifying the device |
+| `--user <id>` | Target a specific Android user profile (default `0`) |
+| `--update-db` | Fetch and merge community-verified debloat entries from UAD-ng |
+| `--profile` | `samsung`, `xiaomi`, `realme`, `google` or `auto` |
+
+</details>
+
+<details>
+<summary><strong>2. 2x UI animation speedup and cache trimming</strong></summary>
+
+```bash
+python scripts/tweak_ui.py --scale 0.5 --trim-cache
+```
+Halves gesture-navigation latency and trims stale system caches safely.
+
+</details>
+
+<details>
+<summary><strong>3. ART ahead-of-time (AOT) pre-compilation</strong></summary>
+
+Pre-compiling hot code paths removes JIT launch stutter.
+
+```bash
+# All user apps:
+python scripts/compile_speed.py --all-user-apps --filter speed-profile
+
+# One heavy app, maximum performance:
+python scripts/compile_speed.py --app com.android.settings --filter speed
+
+# Roll back to default JIT:
+python scripts/compile_speed.py --reset-manifest compile_manifest_SM-G615F_YYYYMMDD_HHMMSS.json
+python scripts/compile_speed.py --reset-app com.android.settings
+```
+Every run records a reset manifest in `backups/` and logs to your local device vault (`devices/<slug>/history.md`).
+
+</details>
+
+<details>
+<summary><strong>4. AppOps background limits and standby buckets</strong></summary>
+
+For apps you want to keep (Instagram, Facebook, Snapchat, Truecaller, shopping apps) but not have draining CPU or holding wakelocks while minimized:
+
+```bash
+# Restrict common social and battery hogs:
+python scripts/appops_restrict.py --preset social --bucket restricted
+
+# Restrict one package:
+python scripts/appops_restrict.py --app com.instagram.android --mode ignore --bucket restricted
+
+# Preview safely:
+python scripts/appops_restrict.py --preset social --dry-run
+
+# Roll back:
+python scripts/appops_restrict.py --reset-manifest appops_manifest_SM-G615F_YYYYMMDD_HHMMSS.json
+python scripts/appops_restrict.py --reset-app com.instagram.android
+```
+Each execution captures a pre-flight manifest in `backups/` and logs to your local vault.
+
+</details>
+
+<details>
+<summary><strong>5. Disable zRAM / Memory Extension on your phone (manual step)</strong></summary>
+
+Disabling OEM virtual RAM stops `kswapd0` compression thrashing on low-end CPUs. Reboot afterwards.
+
+| OEM | Path |
+| :--- | :--- |
+| **Xiaomi / HyperOS / MIUI** | Settings → Additional Settings → Memory Extension → **Off** |
+| **Samsung One UI** | Settings → Battery and device care → Memory → RAM Plus → **Off** (or 0 GB) |
+| **Realme / Oppo / OnePlus** | Settings → About Device → RAM → toggle **RAM Expansion** off |
+
+Background reading: [`references/virtual_ram_guide.md`](references/virtual_ram_guide.md).
+
+</details>
+
+### Step 4: Verify the Speedup
+
+```bash
+python scripts/bench.py --app com.android.settings --duration 8 --scroll --save after.json
+python scripts/bench.py --compare before.json after.json
+```
+
+### Optional Power-User Workflows
+
+<details>
+<summary><strong>Run on-device without a PC (Shizuku + Termux)</strong></summary>
+
+Export matched optimization and rollback scripts for your OEM:
+
+```bash
+python scripts/export_shizuku.py --profile samsung
+# Profiles: samsung, xiaomi, realme, google, social, all
+```
+
+Then on the phone:
+
+1. Start Shizuku via Wireless Debugging.
+2. In Termux run: `rish apply_optimization_samsung_TIMESTAMP.sh`
+3. Roll back on-device: `rish rollback_optimization_samsung_TIMESTAMP.sh`
+
+</details>
+
+<details>
+<summary><strong>Sync the community debloat database (UAD-ng)</strong></summary>
+
+Import thousands of peer-reviewed package definitions:
+
+```bash
+python scripts/update_database.py                                   # sync from upstream
+python scripts/update_database.py --file /path/to/uad_lists.json    # offline import
+python scripts/update_database.py --restore-backup package_database_backup_YYYYMMDD_HHMMSS.json
+```
+Every sync validates package names against an injection regex and writes a pre-flight backup to `backups/package_database_backup_*.json`.
+
+</details>
+
+<details>
+<summary><strong>Unified terminal wizard (non-interactive shortcuts)</strong></summary>
+
+```bash
+python scripts/wizard.py                          # interactive menu
+python scripts/wizard.py --action modes --dry-run
+python scripts/wizard.py --action rescue
+```
+
+</details>
+
+---
+
+## Security and Malware Auditing
+
+Slow phones are often compromised phones. `security_audit.py` inspects the device entirely over ADB text streams — nothing is executed on your PC.
+
+| Check | What it catches |
+| :--- | :--- |
+| **Accessibility services** | Apps with screen-reading and click-simulation rights — the primary vector for banking trojans (e.g. TeaBot) and stalkerware |
+| **Device administrators** | Unauthorized apps registered with `DevicePolicyManager` that prevent uninstallation |
+| **Hidden ghost apps** | Apps running background services with no home-screen launcher icon |
+| **Permission clusters** | High-risk combinations such as screen overlay + SMS interception + background location |
+| **Quarantine** | `--quarantine <package>` freezes a flagged app in one command |
+
+Deep dive: [`references/malware_and_security.md`](references/malware_and_security.md) · Policy: [`SECURITY.md`](SECURITY.md).
+
+---
+
+## Safety, Rollback and Rescue
+
+ALFi is built so that **nothing it does is a one-way door.**
+
+| Safety layer | How it protects you |
+| :--- | :--- |
+| **Disable, never delete** | Packages are disabled (`disable-user`), so app data stays intact and apps can be re-enabled at any time |
+| **Pre-flight manifest & fsync** | A timestamped JSON snapshot is saved and `os.fsync()`-flushed to `backups/` *before* the first package disable call |
+| **On-device manifest mirror** | A copy is written to `/sdcard/.lagfixer_manifest.json` so you can restore via Shizuku (`rish`) with no PC |
+| **Strict allowlist** | OTA updaters, Google Play Services, WebView, telephony / emergency dialers, OEM account logins, banking apps and Widevine L1 are never touched |
+| **Dependency graph** | Disabling is blocked if an installed app depends on the target (e.g. Samsung Account → Galaxy Wearable / Galaxy Store) |
+| **State verification** | Results are confirmed through `pm list packages -e/-d/-u` and `dumpsys package`, with a fallback ladder |
+| **Dry-run everywhere** | Add `--dry-run` to preview any operation |
+
+### 1-Click Rollback
+
+```bash
+python scripts/restore.py --manifest latest --dry-run   # preview
+python scripts/restore.py --manifest latest             # restore latest session
+python scripts/restore.py --package com.example.app     # restore one package
+```
+
+### Emergency Feature Rescue
+
+If the dialer, Play Services, Settings, Camera, SystemUI, Keyguard or WebView misbehaves:
+
+```bash
+# 1. Revive any disabled critical core components:
+python scripts/rescue.py --fix-critical
+
+# 2. Deep multi-layer rescue for one package (enable, reinstall, reset AppOps, bucket and ART):
+python scripts/rescue.py --rescue-package com.google.android.dialer
+
+# 3. Re-enable every disabled package in the user profile:
+python scripts/rescue.py --restore-all-disabled
+
+# 4. List all reset points and backup manifests:
+python scripts/rescue.py --list-manifests
+
+# 5. Hardware Safe Mode / bootloop key combinations for your OEM:
+python scripts/rescue.py --guide samsung    # samsung, xiaomi, google, realme_oneplus, general
+```
+Each rescue captures a snapshot in `backups/rescue_snapshot_*.json` and logs to your local device vault.
+
+### Multi-Device Audit Tracker
+
+Manage family phones or client devices without name collisions:
+
+```bash
+python scripts/device_tracker.py --status   # current device and its history
+python scripts/device_tracker.py --list     # all tracked devices
+```
+> `devices/` and `backups/` hold your private hardware serials and snapshots. They are **gitignored automatically**.
+
+---
+
+## Under the Hood: Advanced Engines
+
+ALFi borrows proven ideas from the best open-source Android tooling.
+
+<details>
+<summary><strong>🧩 Package dependency graph engine</strong> <em>(inspired by UAD-ng)</em></summary>
+
+**Problem:** blindly disabling vendor packages breaks dependents — e.g. disabling Samsung Account breaks Galaxy Wearable and Galaxy Store; disabling Google Services Framework breaks Google Play.
+
+**Solution:** `package_database.json` stores explicit `dependencies` and `dependents`. Before disabling anything, the resolver checks whether dependent apps are installed; if one is active the action is **strictly blocked** with an actionable warning. Core OS services (keyboards, launchers, WebViews, telephony) are hard-whitelisted.
+
+</details>
+
+<details>
+<summary><strong>📱 Persistent on-device manifests</strong> <em>(inspired by Canta)</em></summary>
+
+**Problem:** if something breaks while you travel without a PC, desktop ADB restore manifests are out of reach.
+
+**Solution:** alongside `backups/` on your PC, ALFi mirrors a snapshot to `/sdcard/.lagfixer_manifest.json` on the phone, enabling fully rootless on-device restoration through Shizuku (`rish`).
+
+</details>
+
+<details>
+<summary><strong>🔋 Deep Doze enforcement and allowlist auditor</strong> (<code>scripts/doze_boost.py</code>) <em>(inspired by Android DeviceIdle and Brevent)</em></summary>
+
+**Problem:** rogue third-party apps and OEM bloat add themselves to the battery-optimization whitelist (`dumpsys deviceidle whitelist`), bypassing Doze and draining battery with the screen off.
+
+**Solution:** audits the Doze allowlist, strips rogue pollers via `cmd deviceidle whitelist -<pkg>`, and triggers rapid Deep Doze on screen-off (`cmd deviceidle force-idle`). Includes 1-click snapshot restore.
+
+</details>
+
+<details>
+<summary><strong>⚡ Empirical battery drain and wakelock proof</strong> (<code>scripts/power_audit.py</code>) <em>(inspired by Google BatteryStats and Battery Historian)</em></summary>
+
+**Problem:** users want proof that background optimizations actually save battery.
+
+**Solution:** parses `dumpsys batterystats` to quantify partial wakelocks, CPU wakeups and drain in mAh/hr, with a before-vs-after mode:
+
+```text
+======================================================================
+ ⚡ EMPIRICAL BATTERY & WAKELOCK REDUCTION AUDIT (BEFORE vs AFTER)
+======================================================================
+ Metric                    | Before       | After        | Savings
+----------------------------------------------------------------------
+ Partial Wakelocks         | 142          | 18           | -87.3%
+ Wakelock Active (ms)      | 930000       | 120000       | -87.1%
+ Drain Rate (mAh/hr)       | 38.0         | 12.0         | -68.4%
+======================================================================
+```
+
+</details>
+
+<details>
+<summary><strong>🖥️ Real-time screen mirroring bridge</strong> <em>(inspired by scrcpy)</em></summary>
+
+**Problem:** judging touch responsiveness means glancing between monitor and handset.
+
+**Solution:** the wizard auto-detects a local `scrcpy` install and offers a 1-click launcher (`[S] 📱 Launch Real-Time Screen Mirror`) so you can mirror and control the phone from your desktop.
+
+</details>
+
+---
+
+## Compatibility
+
+### Supported Android Versions
+
+| Android | Status |
+| :--- | :--- |
+| **9 – 16** | Supported |
+| **17+ (SDK 37+)** | Supported — automatic fallback to `disable-user` where user-space system uninstalls are blocked |
+| **8.1** | Validated on a Samsung Galaxy J7 Max (see [benchmarks](#device-2--legacy-samsung-phone)) |
+
+### Supported OEMs and Profiles
+
+| OEM / ROM | What ALFi targets |
+| :--- | :--- |
+| **Samsung (One UI)** | McAfee Device Security, Game Launcher ads, Bixby telemetry, RAM Plus |
+| **Xiaomi (MIUI and HyperOS)** | MIUI System Ads (MSA), Analytics daemon, Wallpaper Carousel / Glance lockscreen ads, Joyose throttling, App Mall pushers |
+| **Realme / Oppo / OnePlus (ColorOS / OxygenOS)** | HeyTap notification wakelocks, ColorOS telemetry (`com.oplus.statistics.rom`), DeepThinker tracking, Oplus commercial ads |
+| **Google Pixel / stock Android** | Safe baseline profile |
+| **Universal social bloat** | Pre-installed Meta / Facebook daemons (`com.facebook.system`, `com.facebook.appmanager`, `com.facebook.services`, `com.facebook.katana`) |
+| **Always protected** | Google Play Services, Android System WebView, OTA updaters, telephony / emergency dialers, banking apps |
+
+Full catalogs: [`references/oem_catalogs.md`](references/oem_catalogs.md) · [`references/safety_matrix.md`](references/safety_matrix.md).
+
+---
+
+## How ALFi Compares
+
+| | **ALFi** | Cleaner / booster apps | Rooted tweaks | Factory reset |
+| :--- | :---: | :---: | :---: | :---: |
+| No root required | ✅ | ✅ | ❌ | ✅ |
+| Reversible in one command | ✅ | ❌ | ⚠️ varies | ❌ |
+| Preserves app data | ✅ | ⚠️ varies | ⚠️ varies | ❌ |
+| Measures real before/after results | ✅ | ❌ | ❌ | ❌ |
+| Audits for trojans and stalkerware | ✅ | ⚠️ varies | ❌ | ❌ |
+| Runs untrusted binaries on your PC | **Never** | n/a | n/a | n/a |
+| Zero external pip dependencies | ✅ (100% stdlib) | ❌ | ❌ | n/a |
+| Protects OTA, banking and Widevine L1 | ✅ | ❌ | ❌ | ✅ |
+
+ALFi is inspired by tools like [UAD-ng](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation), Canta and scrcpy, and adds diagnostics, benchmarking, security auditing and tiered optimization modes on top of debloating.
+
+---
+
+## FAQ
+
+<details>
+<summary><strong>Do I need to root my phone to use ALFi?</strong></summary>
+
+No. ALFi uses standard, non-root ADB commands only. Because it avoids rooting, it avoids the side effects rooting is known for, such as tripping Knox or losing Widevine L1, and its allowlist specifically protects banking apps and Widevine L1 DRM.
+
+</details>
+
+<details>
+<summary><strong>Is it safe? Can I undo what ALFi did?</strong></summary>
+
+Yes. ALFi *disables* packages rather than uninstalling them, so app data is preserved. Every operation saves and `fsync`s a timestamped manifest before making changes, and `python scripts/restore.py --manifest latest` reverses your last session. For anything unexpected, `python scripts/rescue.py --fix-critical` revives disabled core components.
+
+</details>
+
+<details>
+<summary><strong>How do I fix lag on my Android phone without a factory reset?</strong></summary>
+
+Run `alfi`, diagnose with `diagnose.py`, then apply the **Medium** mode. This removes background telemetry and adware, reduces memory pressure, and speeds up animations. Then confirm the gain with `bench.py --compare`.
+
+</details>
+
+<details>
+<summary><strong>Should I turn off RAM Plus / Memory Extension / RAM Expansion?</strong></summary>
+
+On budget and older phones with weak CPU clusters, often yes. Compressing memory into zRAM costs CPU time, and `kswapd0` can compete with the UI thread. ALFi's **High** and **Ultra** modes include guidance for disabling it; use `diagnose.py` to see whether your phone is under swap pressure first.
+
+</details>
+
+<details>
+<summary><strong>How do I remove bloatware over ADB without root?</strong></summary>
+
+Run `python scripts/optimize.py --profile auto --dry-run` to preview, then drop `--dry-run` to apply. ALFi detects your OEM, checks the dependency graph and allowlist, and writes a restore manifest.
+
+</details>
+
+<details>
+<summary><strong>Can ALFi detect banking trojans, stalkerware or hidden adware?</strong></summary>
+
+`security_audit.py` flags apps abusing Accessibility Services, unauthorized Device Administrators, launcher-less ghost apps and dangerous permission combinations, and can quarantine them. It is an auditing aid, not a replacement for a full antivirus.
+
+</details>
+
+<details>
+<summary><strong>Does ALFi work wirelessly?</strong></summary>
+
+Yes. On Android 11+, use Wireless Debugging and `python scripts/connect.py --pair <ip:port> <code>`.
+
+</details>
+
+<details>
+<summary><strong>Can I run it without a PC?</strong></summary>
+
+Yes, using Shizuku and Termux. Generate scripts with `export_shizuku.py` and run them with `rish`. The on-device manifest mirror enables rollback too.
+
+</details>
+
+<details>
+<summary><strong>Does ALFi store or upload my device data?</strong></summary>
+
+Audit history, serials and snapshots are kept locally in `devices/` and `backups/`, which are gitignored by default. Scans run through standard ADB shell commands, and ALFi never executes Android binaries on your computer.
+
+</details>
+
+<details>
+<summary><strong>Which Android versions are supported?</strong></summary>
+
+Android 9 through 17+, and it has also been validated on Android 8.1. Android 17's block on user-space system uninstalls is handled automatically.
+
+</details>
+
+---
+
+## Repository Structure
+
+<details>
+<summary><strong>Show full project tree</strong></summary>
 
 ```text
 alfi/
@@ -255,295 +842,18 @@ alfi/
     └── safety_matrix.md                     # Whitelist rules for 100% OTA, Banking & Account integrity
 ```
 
----
-
-## 🛠️ Getting Started in 3 Steps
-
-### ⚡ Fast-Track: Interactive ALFi Control Dashboard
-If you prefer an all-in-one interactive menu over typing individual command line flags, simply launch:
-```bash
-alfi
-# Or from source:
-python scripts/wizard.py
-```
-*(Provides a sleek, cyber-themed guided menu for multi-tier modes, diagnostics, frame pacing benchmarks, safe debloating, speed pre-compilation, AppOps limits, Shizuku export, real-time screen mirroring, and multi-device target switching).*
-
-#### 📱 Interactive Device Manager & Target Switcher (`[D]`)
-Managing multiple connected devices (USB and Wireless)? Press **`D`** in the dashboard to list all attached devices, check their authorization state (with guidance for pending RSA keys), pair Android 11+ Wireless Debugging phones with 6-digit codes, or switch targets dynamically:
-```text
-╭────────────────────────────────────────────────────────────────────────╮
-│               ⚡ ALFi DEVICE MANAGER & TARGET SELECTOR ⚡               │
-╰────────────────────────────────────────────────────────────────────────╯
-  [ 1 ] 🟢 ACTIVE TARGET : SAMSUNG GALAXY S23 (USB)
-  [ 2 ] ⚪ AVAILABLE     : REDMI 220733SI (WIRELESS - 192.168.1.55:5555)
-  [ R ] 🔄 Refresh Device Scan
-  [ W ] 📶 Pair / Connect Wireless Phone (IP:Port + Pairing Code)
-  [ 0 ] 🔙 Return to Dashboard
-```
-
-### 📦 Optional: Install Globally via pipx / pip
-You can install and run `ALFi` directly as a standalone system command:
-```bash
-pipx install git+https://github.com/pavnxet/alfi.git
-
-# Run directly from anywhere in your terminal:
-alfi             # Launches the sleek ALFi interactive control dashboard
-alfi-modes       # 4-Tier Optimization Modes (Low, Medium, High, Ultra)
-alfi-power       # Empirical battery drain & wakelock proof
-alfi-doze        # Deep Doze & deviceidle allowlist cleaner
-alfi-rescue      # Quick launcher for emergency rescue
-alfi-bench       # Dynamic frame pacing & jank benchmark suite
-alfi -s <serial> # Target specific USB or Wireless device directly
-```
-
-### Prerequisites
-* **Python 3.9+** installed on your PC (Windows, macOS, or Linux).
-* **ADB (Android Debug Bridge)**:
-  * Windows: Included with Android SDK Platform-Tools or standalone `adb.exe`.
-  * macOS: `brew install android-platform-tools`
-  * Linux: `sudo apt install adb`
+</details>
 
 ---
 
-### Step 1: Connect Your Phone (USB or Wireless)
+## Contributing, Security and License
 
-#### Method A: USB Cable (Easiest)
-1. On your phone: Go to **Settings** > **About Phone** > Tap **Build Number** (or **MIUI/OS Version**) **7 times** to unlock Developer Options.
-2. Go to **Settings** > **Developer Options** > Toggle **ON**: **USB Debugging**.
-3. Plug your phone into your PC with a data cable. Unlock your phone screen, check ☑ *"Always allow from this computer"*, and tap **OK**.
-4. Test connection:
-   ```bash
-   python scripts/connect.py
-   ```
+- **Contribute:** verified OEM package reports and benchmark results are very welcome — see [CONTRIBUTING.md](CONTRIBUTING.md).
+- **Report a vulnerability:** see [SECURITY.md](SECURITY.md).
+- **License:** [MIT](LICENSE) — free for personal and commercial use.
 
-#### Method B: Wireless Debugging (No Cable Needed, Android 11+)
-1. Ensure your PC and phone are on the **same Wi-Fi network**.
-2. Go to **Settings** > **Developer Options** > **Wireless Debugging** > Toggle **ON**.
-3. Tap **"Pair device with pairing code"** to get the pairing IP, port, and 6-digit code.
-4. Pair and connect from your terminal:
-   ```bash
-   python scripts/connect.py --pair 192.168.1.50:37891 123456
-   python scripts/connect.py --connect 192.168.1.50:41235
-   ```
+If ALFi fixed your phone, a ⭐ on the repo helps other people with laggy Android devices find it.
 
 ---
 
-### Step 2: Run Performance & Security Diagnostics
-
-#### 1. Diagnose Root-Cause Lag & CPU Bottlenecks
-```bash
-python scripts/diagnose.py
-```
-*Profiles CPU run queues, checks memory pressure, and identifies top CPU-burning processes.*
-
-#### 2. Run Baseline Frame Pacing Benchmark
-```bash
-python scripts/bench.py --app com.android.settings --duration 8 --save before.json
-```
-*Measures baseline UI frame pacing, jank percentage, P90 latency, and 1% Low FPS.*
-
-#### 3. Audit Sketchy Apps & Accessibility Hijackers
-```bash
-python scripts/security_audit.py
-```
-*Audits third-party apps for accessibility abuse, hidden ghost launcher activities, and dangerous permission combinations.*
-
-To safely quarantine/freeze any suspicious app immediately:
-```bash
-python scripts/security_audit.py --quarantine <package_name>
-```
-
----
-
-### Step 3: Optimize, Debloat & Speed Up
-
-#### 1. Safe OEM Debloating & Telemetry Elimination
-```bash
-# Preview what would be disabled (safe dry run):
-python scripts/optimize.py --profile auto --dry-run
-
-# Apply optimizations:
-python scripts/optimize.py --profile auto
-```
-*Options supported:*
-* `--dry-run`: Preview changes without modifying device state.
-* `--user <id>`: Target specific Android user profiles (default: `0`).
-* `--update-db`: Automatically fetch and merge thousands of community-verified debloat entries from UAD-ng.
-* `--profile`: Select `samsung`, `xiaomi`, `realme`, `google`, or `auto`.
-
-#### 2. 2x UI Animation Speedup & Cache Trimming
-```bash
-python scripts/tweak_ui.py --scale 0.5 --trim-cache
-```
-*Cuts gesture navigation latency in half and trims stale system caches.*
-
-#### 3. ART Ahead-Of-Time (AOT) Pre-Compilation & Reset Points
-```bash
-# Pre-compile hot code paths for all user apps to eliminate JIT launch stutter:
-python scripts/compile_speed.py --all-user-apps --filter speed-profile
-
-# Compile a specific heavy application for maximum execution performance:
-python scripts/compile_speed.py --app com.android.settings --filter speed
-
-# 1-Click Rollback / Reset Point (reverts packages back to default JIT state):
-python scripts/compile_speed.py --reset-manifest compile_manifest_SM-G615F_YYYYMMDD_HHMMSS.json
-
-# Or reset a single app:
-python scripts/compile_speed.py --reset-app com.android.settings
-```
-*(Every compilation run automatically records a reset manifest in `backups/` and logs the event to your local device vault in `devices/<slug>/history.md`).*
-
-#### 4. AppOps Background Execution Limits & Standby Buckets (Phase 2)
-For apps you need to keep installed (e.g. Instagram, Facebook, Snapchat, Truecaller, shopping apps) but don't want draining CPU cycles, running background wakelocks, or polling telemetry while minimized:
-
-```bash
-# Restrict background execution for common social & battery hogs:
-python scripts/appops_restrict.py --preset social --bucket restricted
-
-# Restrict a specific package:
-python scripts/appops_restrict.py --app com.instagram.android --mode ignore --bucket restricted
-
-# Preview restrictions safely without modifying device:
-python scripts/appops_restrict.py --preset social --dry-run
-
-# 1-Click Rollback / Reset Point (restores original AppOps and standby states):
-python scripts/appops_restrict.py --reset-manifest appops_manifest_SM-G615F_YYYYMMDD_HHMMSS.json
-
-# Or restore background activity for a single app:
-python scripts/appops_restrict.py --reset-app com.instagram.android
-```
-*(Every execution automatically captures a pre-flight snapshot manifest in `backups/` and logs the action to your local PC device vault).*
-
-#### 5. Disable Memory Extension (On Your Phone)
-* **Xiaomi / HyperOS / MIUI**: Settings > Additional Settings > Memory Extension > Select **Off** > Reboot.
-* **Samsung One UI**: Settings > Battery and device care > Memory > RAM Plus > Select **Off** (or 0 GB unlocked by this tool) > Reboot.
-* **Realme / Oppo / OnePlus**: Settings > About Device > RAM > Toggle OFF **RAM Expansion** > Reboot.
-
-#### 6. Run Post-Optimization Benchmark & Prove Speedup
-```bash
-# Collect after benchmark:
-python scripts/bench.py --app com.android.settings --duration 8 --save after.json
-
-# Compare before vs after:
-python scripts/bench.py --compare before.json after.json
-```
-
-#### 7. On-Device Shizuku & Rish Script Export (Phase 3)
-For running optimizations or rollbacks directly on your phone without a PC connected (using Shizuku + Termux):
-
-```bash
-# Export matched optimization and rollback scripts for your OEM:
-python scripts/export_shizuku.py --profile samsung
-# (Supports: samsung, xiaomi, realme, google, social, all)
-
-# Run on phone via Termux:
-# 1. Start Shizuku via Wireless Debugging
-# 2. In Termux, run: rish apply_optimization_samsung_TIMESTAMP.sh
-# 3. 1-Click Rollback on phone: rish rollback_optimization_samsung_TIMESTAMP.sh
-```
-
-#### 8. Sync Community Package Database (Phase 4)
-Automatically import and merge thousands of community-maintained, peer-reviewed debloat package definitions from UAD-ng (Universal Android Debloater Next Generation):
-
-```bash
-# Sync from upstream repository:
-python scripts/update_database.py
-
-# Import from a local JSON file (offline mode):
-python scripts/update_database.py --file /path/to/uad_lists.json
-
-# 1-Click Rollback if an update ever needs reverting:
-python scripts/update_database.py --restore-backup package_database_backup_YYYYMMDD_HHMMSS.json
-```
-*(Every sync automatically validates package names against injection regex and creates a pre-flight backup snapshot in `backups/package_database_backup_*.json`).*
-
-#### 9. Unified Interactive Terminal Control Wizard (Phase 4)
-Run all tools, benchmarks, and recovery operations through a single interactive dashboard:
-
-```bash
-# Interactive menu:
-python scripts/wizard.py
-
-# Non-interactive CLI shortcut:
-python scripts/wizard.py --action debloat --dry-run
-python scripts/wizard.py --action rescue
-```
-
----
-
-### 🆘 Emergency Feature Rescue & Hardware Safe Mode Engine (Phase 3)
-
-If any phone feature is restricted, broken, or misbehaving (e.g. Phone dialer, Google Play Services, Settings, Camera, SystemUI, Keyguard, or WebView):
-
-```bash
-# 1. Scan and instantly revive any disabled critical core components:
-python scripts/rescue.py --fix-critical
-
-# 2. Deep multi-layer rescue for a specific package (enables, reinstalls, resets AppOps, bucket & ART):
-python scripts/rescue.py --rescue-package com.google.android.dialer
-
-# 3. Re-enable all currently disabled packages across the user profile:
-python scripts/rescue.py --restore-all-disabled
-
-# 4. View all historical reset points and backup manifests:
-python scripts/rescue.py --list-manifests
-
-# 5. Display OEM-specific hardware Safe Mode / bootloop recovery key combinations:
-python scripts/rescue.py --guide samsung    # Options: samsung, xiaomi, google, realme_oneplus, general
-```
-*(Every rescue operation automatically captures a pre-flight snapshot in `backups/rescue_snapshot_*.json` and logs the event to your local PC device vault).*
-
----
-
-### 🔄 1-Click Rollback & Restoration
-
-If you ever wish to re-enable an app or restore your phone to its exact pre-optimization state:
-
-```bash
-# Preview restoration without touching the device:
-python scripts/restore.py --manifest latest --dry-run
-
-# Restore everything from your latest optimization session:
-python scripts/restore.py --manifest latest
-
-# Or restore a specific package:
-python scripts/restore.py --package com.example.app
-```
-
----
-
-### 📱 Multi-Device Audit Tracker (For Families & Tech Enthusiasts)
-
-Manage multiple devices and track past fixes over time without name collisions:
-
-```bash
-# Inspect currently connected device and view its past audit history:
-python scripts/device_tracker.py --status
-
-# List all tracked devices in your private local vault:
-python scripts/device_tracker.py --list
-```
-
-*(Note: The `devices/` and `backups/` directories store your private hardware serials and snapshots locally and are automatically ignored by git to protect your privacy).*
-
----
-
-## 🛡️ Supported OEMs & Profiles
-
-* **Samsung (One UI)**: McAfee Device Security, Game Launcher ads, Bixby telemetry, RAM Plus.
-* **Xiaomi (MIUI & HyperOS)**: MIUI System Ads (MSA), Analytics daemon, Wallpaper Carousel / Glance lockscreen ads, Joyose throttling, App Mall pushers.
-* **Realme / Oppo / OnePlus (ColorOS / OxygenOS)**: HeyTap notification wakelocks, ColorOS telemetry (`com.oplus.statistics.rom`), DeepThinker tracking, Oplus Commercial ads.
-* **Universal Social Bloat**: Pre-installed Meta/Facebook background daemons (`com.facebook.system`, `com.facebook.appmanager`, `com.facebook.services`, `com.facebook.katana`).
-* **Critical Subsystems Allowlist**: Guaranteed preservation for Google Play Services, Android System WebView, OTA updaters, Telephony/Emergency dialers, and Banking apps.
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on submitting verified OEM packages and benchmark reports.
-
----
-
-## 📄 License
-
-This project is licensed under the [MIT License](LICENSE). Free for personal and commercial use.
+<sub>**Keywords:** android lag fix, fix slow android phone, android debloater without root, adb debloat, remove bloatware adb, disable zram, disable ram plus, memory extension off, samsung one ui debloat, xiaomi hyperos debloat, miui debloat, realme coloros debloat, android performance optimizer, android security audit, accessibility service malware detector, android stalkerware detection, adb shell optimization, android jank benchmark, gfxinfo framestats, android doze optimization, shizuku rish scripts, universal android debloater alternative.</sub>
