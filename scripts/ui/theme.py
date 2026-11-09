@@ -25,13 +25,13 @@ _BASIC = {
 
 # 256-colour approximations of the ALFi neon identity.
 _X256 = {
-    "ok": "42",
-    "warn": "226",
-    "danger": "203",
-    "info": "51",
-    "accent": "213",
-    "muted": "245",
-    "title": "231",
+    "ok": "38;5;42",
+    "warn": "38;5;226",
+    "danger": "38;5;203",
+    "info": "38;5;51",
+    "accent": "38;5;213",
+    "muted": "38;5;245",
+    "title": "1;38;5;231",
     "bold": "1",
     "dim": "2",
 }
