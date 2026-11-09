@@ -135,6 +135,8 @@ def main():
     parser.add_argument("--all-user-apps", action="store_true", help="Compile all installed third-party user applications")
     parser.add_argument("--reset-app", help="Reset a specific package back to default uncompiled JIT state")
     parser.add_argument("--reset-manifest", help="Reset all packages from a compilation manifest file")
+    parser.add_argument("--targets", action="store_true",
+                        help="Compile only the apps still at status=verify (measured, not guessed)")
     parser.add_argument("--dry-run", action="store_true", help="Simulate compilation commands without modifying device")
     parser.add_argument("--json", action="store_true", help="Output machine-readable JSON")
     args = parser.parse_args()
@@ -190,6 +192,41 @@ def main():
 
         if args.json:
             print(json.dumps({"status": "reset_complete", "packages": reset_results}, indent=2))
+        return
+
+    # 1b. Compile only the apps that are still interpreted
+    if args.targets:
+        import attrib as attrib_mod
+
+        data = attrib_mod.collect(target_serial)
+        if "error" in data:
+            print("❌ Could not read dexopt state: %s" % data["error"])
+            sys.exit(1)
+        targets = sorted(p for p, meta in (data.get("dexopt", {}).get("packages") or {}).items()
+                         if meta.get("status") == "verify")
+        if not targets:
+            print("✅ Nothing to do: no packages are stuck at status=verify.")
+            return
+        if args.json:
+            print(json.dumps({"targets": targets, "dry_run": args.dry_run}, indent=2))
+            if args.dry_run:
+                return
+        else:
+            print("\n[*] %d package(s) still interpreted (status=verify):" % len(targets))
+            for p in targets[:15]:
+                print("    - " + p)
+            if len(targets) > 15:
+                print("    (+%d more)" % (len(targets) - 15))
+
+        results = []
+        for pkg in targets:
+            ok, msg = compile_package(pkg, args.filter, target_serial, dry_run=args.dry_run)
+            results.append({"package": pkg, "success": ok, "message": msg})
+            if not args.json:
+                print("  %s %s" % ("✅" if ok else "⚠️", msg))
+        if not args.json:
+            done = sum(1 for r in results if r["success"])
+            print("\n✅ Compiled %d / %d target(s) with filter '%s'." % (done, len(results), args.filter))
         return
 
     # 2. Reset single app

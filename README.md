@@ -109,7 +109,7 @@ alfi restore --manifest latest
 | Core | `status`, `watch`, `probe`, `attrib`, `devices`, `tui` |
 | Optimise | `modes`, `optimize`, `ui`, `compile`, `appops`, `doze` |
 | Measure | `diagnose`, `bench`, `power`, `audit`, `vault` |
-| Recover | `restore`, `rescue`, `shizuku` |
+| Recover | `restore`, `verify`, `rescue`, `shizuku` |
 | Maintain | `update`, `config` |
 
 Flags pass straight through to the underlying engine, so `--dry-run`, `--json`,
@@ -122,6 +122,9 @@ alfi probe      # stall time (PSI), thermal status, memory truth, battery
 alfi attrib     # runaway processes, dexopt state, wakeup counts
 ```
 
+`attrib` feeds an action: `alfi compile --targets` compiles only the apps it
+found still interpreted (`status=verify`), instead of a blind list.
+
 `probe` reads `/proc/pressure/*` — the same counters Android's own low-memory
 killer uses — so it can tell you **"memory is not your problem"** instead of
 showing 84% RAM and letting you guess. It also reports thermal throttling
@@ -131,6 +134,16 @@ without PSI.
 `attrib` answers *who*: the largest resident processes (flagging one that eats
 a quarter of RAM), which apps are still interpreted (`status=verify`), and
 per-package wakeups. Both support `--json`.
+
+### Did it stick?
+
+```bash
+alfi verify --baseline   # record boot_id + current states
+alfi verify              # after a reboot or OTA: what came back?
+```
+
+Non-root debloaters are known to report success while the OEM restores packages
+after a reboot. `verify` is the only command in this space that checks.
 
 ### Live monitor
 

@@ -28,6 +28,7 @@ COMMANDS = {
     "watch": "monitor",
     "probe": "probe",
     "attrib": "attrib",
+    "verify": "verify",
     "devices": "connect",
     "modes": "modes",
     "optimize": "optimize",
@@ -54,6 +55,7 @@ HELP = """usage: alfi [command] [options]
   alfi watch                 live CPU / memory / swap / battery monitor
   alfi probe                 stall time (PSI), thermal status, memory truth
   alfi attrib                who is causing it: runaway processes, dexopt, wakeups
+  alfi verify                did the debloat survive a reboot? (--baseline first)
   alfi devices               list attached devices and pairing help
 
   alfi modes   [--mode low|medium|high|ultra] [--dry-run] [--yes]
