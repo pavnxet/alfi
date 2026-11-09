@@ -1,48 +1,68 @@
 # Safety Classification & Critical System Whitelist
 
-This document establishes the safety guardrails enforced by **Phone Lag Fixer** to ensure zero disruption to official software updates (OTA), banking apps, security credentials, and cloud backups.
+This document establishes the safety guardrails, mode boundaries, and dependency verification matrix enforced by **Phone Lag Fixer** to ensure zero disruption to official software updates (OTA), banking apps, security credentials, input methods, home screens, and cloud backups.
 
 ---
 
-## 1. Multi-Tier Risk Classification
+## 1. The 4-Tier Mode Risk Boundaries
 
-Inspired by the Universal Android Debloater (UAD-ng) taxonomy:
+Instead of treating all optimizations equally, the toolkit groups all modifications into 4 distinct, calibrated tiers:
 
-| Tier | Definition | Examples | Default Action |
+| Mode | Risk Level | Boundary & Scope | Safety Gate Enforced |
 |---|---|---|---|
-| **`Recommended`** | 100% safe to disable. Bloatware, advertising frameworks, third-party pre-installs, and telemetry daemons. Zero negative impact on daily device usage. | `com.oplus.statistics.rom`, `com.facebook.system`, `com.miui.msa.global`, `com.microsoft.appmanager` | **Disabled automatically** |
-| **`Advanced`** | Safe to disable unless you actively use that specific vendor service. | `com.heytap.mcs` (HeyTap Cloud push), `com.samsung.android.bixby.agent`, `com.samsung.android.aremoji` | **Prompted / Optional** |
-| **`Expert`** | Safe only for power users who intentionally replace standard system workflows. | Printing spooler, live wallpaper picker, stock gallery | **Skipped by default** |
-| **`Unsafe` (Whitelisted)** | **CRITICAL SUBSYSTEMS.** Disabling these may result in bootloops, inability to make phone calls, loss of banking access, or broken OTA updates. | System UI, Telephony, Account sign-in, OTA Update clients | **HARD BLOCKED (Never touched)** |
+| **`🟢 Low`** | **Zero Risk** | Carrier stubs, adware preloads, system cache trim, gentle 0.75x animation scales. Untouched OEM services and user apps. | Automatic 1-click execution. |
+| **`🟡 Medium`** | **Low Risk (Daily Driver)** | Low + OEM telemetry & tracking daemons, 0.5x animations, ART `speed-profile` compilation, social AppOps background limits. | Automatic 1-click execution. |
+| **`🟠 High`** | **Moderate Risk** | Medium + advanced vendor features (Bixby, AR Emoji, Joyose), App Standby `restricted`, Deep Doze allowlist cleanup, 0 GB zRAM. | Pre-flight manifest snapshot + summary preview. |
+| **`🔴 Ultra`** | **High Risk (Probable Breaking)** | High + duplicate OEM accounts (Samsung/Mi ID), duplicate app stores, secondary keyboards/launchers, 0.0x zero animations, full system ART `speed` compilation. | **Double Gate**: Mandatory dependency graph check + user must type `I UNDERSTAND`. |
 
 ---
 
-## 2. Hard Whitelist (Packages That Are NEVER Touched)
+## 2. Package Dependency Conflict Matrix *(Inspired by UAD-ng)*
 
-### A. System Software Updates (OTA Integrity)
+Disabling an upstream service without disabling downstream apps causes crashes or broken workflows. The toolkit checks for installed dependents before allowing an operation:
+
+| Package | Role | Dependents (Apps Requiring This) | Rule |
+|---|---|---|---|
+| `com.osp.app.signin` | Samsung Account | `com.sec.android.app.samsungapps` (Galaxy Store)<br>`com.samsung.android.app.watchmanager` (Galaxy Wearable) | **BLOCKED** if Galaxy Store or Galaxy Watch is installed. Allowed only in Ultra mode if dependents are also disabled. |
+| `com.xiaomi.account` | Xiaomi Mi Account | `com.xiaomi.discover` (GetApps Store)<br>`com.miui.cloudservice` (Mi Cloud) | **BLOCKED** if GetApps or Mi Cloud is active. |
+| `com.oplus.account` | HeyTap / Realme Account | `com.heytap.market` (App Market)<br>`com.heytap.usercenter` (User Center) | **BLOCKED** if HeyTap Market is active. |
+| `com.google.android.gms` | Google Play Services | All Google apps, Push notifications, SafetyNet/Play Integrity | **HARD BLOCKED (Never Touched)** across all modes. |
+
+---
+
+## 3. Hard Whitelist (Packages That Are NEVER Touched)
+
+### A. Critical System Subsystems (OS Crash Prevention)
+- `com.android.phone`: Cellular radio, SIM management, emergency 911/112 dialer.
+- `com.android.systemui`: Status bar, navigation bar, lockscreen compositor.
+- `com.android.settings`: System Settings preferences provider.
+- `com.google.android.webview` / `com.google.android.trichromelibrary`: Shared WebView renderer for banking & browser apps.
+- `com.android.packageinstaller`: Core APK installation service.
+
+### B. Input Method & Keyboard Safeguard
+- `com.google.android.inputmethod.latin` (Gboard)
+- `com.samsung.android.honeyboard` (Samsung Keyboard)
+- `com.touchtype.swiftkey` (SwiftKey)
+> **Safety Rule**: Disabling a keyboard is **strictly blocked** if no other active keyboard remains installed on the device.
+
+### C. Home Screen & Launcher Safeguard
+- `com.sec.android.app.launcher` (One UI Home)
+- `com.miui.home` (MIUI / HyperOS Launcher)
+- `com.google.android.apps.nexuslauncher` (Pixel Launcher)
+- `com.android.launcher3` (AOSP Launcher)
+> **Safety Rule**: Disabling a system launcher is **strictly blocked** unless a verified third-party launcher (e.g. Nova Launcher) is confirmed installed and active.
+
+### D. System Software Updates (OTA Integrity)
 Disabling OTA engines blocks security patches and Android version upgrades. The following packages are strictly protected:
 - `com.oplus.ota` (Realme / ColorOS OTA engine)
 - `com.oplus.romupdate` (Security patch delta verifier)
-- `com.oplus.cota` (Carrier operator OTA configuration)
 - `com.google.android.configupdater` (Google Play System & Mainline updater)
 - `com.wssyncmldm` (Samsung firmware update client)
 - `com.android.updater` (Xiaomi HyperOS / MIUI updater)
 
-### B. User Accounts, Cloud Sync & 2FA
-To guarantee seamless access to saved contacts, gallery backups, and 2-factor authentication prompts:
-- `com.oplus.account` & `com.heytap.usercenter` (Realme / Oppo ID login)
-- `com.heytap.cloud` (HeyTap Cloud backup)
-- `com.osp.app.signin` (Samsung Account authentication)
-- `com.google.android.gms` (Google Play Services)
-
-### C. Security, Banking & DRM
-- `com.google.android.webview` (Required for displaying in-app banking & browser logins)
-- `com.android.keyguard` (PIN, password, and biometric fingerprint/face authentication)
-- Widevine L1 DRM libraries (Preserves Full HD streaming in Netflix, Prime Video, etc.)
-
 ---
 
-## 3. The Non-Destructive Guarantee (`pm disable-user`)
+## 4. The Non-Destructive Guarantee (`pm disable-user`)
 
 Traditional root scripts delete `.apk` files directly from `/system/app`, which breaks dm-verity and bricks phones upon reboot.
 
@@ -63,7 +83,7 @@ adb shell pm disable-user --user 0 <package_name>
 
 ---
 
-## 4. Version-Aware Command Resolution & Data Retention (Android 6 to 17+)
+## 5. Version-Aware Command Resolution & Data Retention (Android 6 to 17+)
 
 | Desired State | Current State | Android 6–16 Execution | Android 17+ (SDK 37+) Resolution | Data Retention |
 |---|---|---|---|---|
@@ -76,4 +96,3 @@ adb shell pm disable-user --user 0 <package_name>
 If OEM restrictions block a command:
 - `uninstall ➡️ disable`: When `only root can delete` or `DELETE_FAILED_USER_RESTRICTED` is returned.
 - `disable ➡️ uninstall`: When `Cannot disable system packages` (HyperOS / MIUI SecurityException) is returned.
-

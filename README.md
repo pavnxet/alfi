@@ -98,6 +98,95 @@ In reality, Android lag and micro-stutters stem from 4 distinct kernel and userl
 
 ---
 
+## 🎮 The 4 Calibrated Optimization Modes (Low, Medium, High, Ultra)
+
+Instead of forcing users to guess which tweaks to run, `android-lag-fixer` features an interactive, **Mode-First Architecture**. Before applying changes, the terminal asks you to select between four calibrated tiers. High-risk, destructive, or breaking modifications are strictly quarantined inside **Ultra** behind explicit confirmation gates and dependency graph checks.
+
+```text
+======================================================================
+ 🚀 ANDROID LAG FIXER - SELECT OPTIMIZATION MODE
+======================================================================
+  [1] 🟢 Low (Zero Risk / Safe Baseline)
+       Risk: None | Audience: Casual users, family phones, work profiles
+       Details: Carrier stubs & adware only, cache trim, 0.75x animations.
+
+  [2] 🟡 Medium (Balanced / Recommended Daily Driver)
+       Risk: Low | Audience: Everyday smartphone users wanting noticeable smoothness
+       Details: Low + OEM telemetry & tracking, 0.5x animations, ART speed-profile, social AppOps limits.
+
+  [3] 🟠 High (Aggressive Smoothness & Battery)
+       Risk: Moderate | Audience: Power users, older devices, budget 2GB-4GB hardware
+       Details: Medium + vendor bloat (Bixby, Joyose), App Standby restricted, deep Doze, 0 GB zRAM.
+
+  [4] 🔴 Ultra (Extreme / Power Users / Probable Risk)
+       Risk: High | Audience: Enthusiasts, secondary devices, dedicated gaming rigs
+       Details: High + OEM cloud & duplicate stores, 0.0x animations, full system ART compile.
+======================================================================
+```
+
+### Detailed Mode Comparison Matrix
+
+| Feature / Vector | 🟢 Mode 1: Low (Safe Baseline) | 🟡 Mode 2: Medium (Recommended) | 🟠 Mode 3: High (Aggressive) | 🔴 Mode 4: Ultra (High-Risk) |
+| :--- | :--- | :--- | :--- | :--- |
+| **Philosophy & Target** | Zero risk; impossible to break anything. Safe for family & work profiles. | Balanced daily driver. Eliminates ad tracking & micro-stutter with zero feature loss. | Aggressive smoothness & battery on budget/older hardware (2GB–4GB RAM). | Maximum stripped configuration for gaming benchmarks & secondary devices. |
+| **Packages Disabled** | Carrier bloat & marketing preloads only (`Recommended`: Aura, carrier stubs). | Low + OEM telemetry & tracking daemons (`Recommended`: Glance, MSA, Meta). | Medium + non-critical vendor bloat (`Advanced`: Bixby, AR Emoji, Joyose). | High + OEM cloud sync, duplicate stores, secondary keyboards/launchers (`Expert`). |
+| **AppOps Background Limits** | Untouched. | `RUN_IN_BACKGROUND=ignore` on social/shopping hogs (Facebook, Instagram, Truecaller). | Background execution blocked on all detected non-essential apps. | Maximum background execution freeze across third-party applications. |
+| **App Standby Buckets** | Untouched. | `rare` for social/shopping background pollers. | `restricted` (capped daily execution on Android 12+). | `restricted` across all non-system user applications. |
+| **ART Ahead-Of-Time Pre-Compile** | Default JIT. | `speed-profile` on top foreground user apps. | `speed` compilation on heavy apps & launcher. | Full system & user app `speed` AOT compilation. |
+| **Window & Transition Animations** | `0.75x` (gentle acceleration). | `0.5x` (snappy standard). | `0.5x` (snappy standard). | `0.0x` (animations off for instant app switching). |
+| **Doze & Battery Policy** | Untouched. | Clean telemetry pollers from `deviceidle whitelist`. | Enforce rapid Deep Doze on screen-off + allowlist cleanup. | Force Deep Doze + stripped allowlist + background alarm caps. |
+| **Virtual RAM (zRAM / RAM Plus)** | Untouched. | Untouched or tuned. | Set to `0 GB` (RAM Plus disabled) to stop `kswapd0` loops. | `0 GB` disabled completely for raw flash memory speed. |
+| **Safety Gate Required** | Automatic (1-click). | Automatic (1-click). | Pre-flight manifest snapshot + summary preview. | **Double Gate: Dependency Graph Validation + Typing 'I UNDERSTAND'**. |
+
+```bash
+# Run interactively (prompts for mode selection):
+python scripts/modes.py
+
+# Or specify mode directly:
+python scripts/modes.py --mode medium
+python scripts/modes.py --mode high --dry-run
+python scripts/modes.py --mode ultra --force-ultra
+```
+
+---
+
+## 💡 Upstream Innovations & Community Inspirations
+
+`android-lag-fixer` integrates battle-tested paradigms from premier open-source Android tooling:
+
+### 1. 🧩 Package Dependency Graph Engine *(Inspired by UAD-ng)*
+* **Problem**: Blindly disabling vendor packages breaks dependent applications (e.g. disabling Samsung Account breaks Galaxy Wearable and Galaxy Store; disabling Google Services Framework breaks Google Play).
+* **Remediation**: `package_database.json` maintains an explicit `"dependencies"` and `"dependents"` schema. Before disabling any package, the dependency resolver checks if dependent apps are installed. If a dependent remains active, disabling is **strictly blocked** with an actionable warning. Fundamental OS services (keyboards, launchers, WebViews, telephony) are hard-whitelisted.
+
+### 2. 📱 Persistent On-Device Manifests *(Inspired by Canta)*
+* **Problem**: If an emergency occurs while traveling without a PC, ADB desktop restore manifests are unreachable.
+* **Remediation**: In addition to saving backup manifests to `backups/` on your PC, the toolkit automatically mirrors a backup snapshot to `/sdcard/.lagfixer_manifest.json` on the device. This enables 100% rootless on-device restoration via Shizuku (`rish`) without needing a computer.
+
+### 3. 🔋 Deep Doze Enforcement & Allowlist Auditor (`scripts/doze_boost.py`) *(Inspired by Android DeviceIdle & Brevent)*
+* **Problem**: Rogue third-party apps and OEM bloatware frequently add themselves to the Android battery optimization whitelist (`dumpsys deviceidle whitelist`), bypassing Doze sleep states and draining battery while the screen is off.
+* **Remediation**: Audits the Doze allowlist, strips rogue third-party pollers via `cmd deviceidle whitelist -<pkg>`, and triggers rapid Deep Doze state transitions on screen-off (`cmd deviceidle force-idle`). Includes 1-click snapshot restore.
+
+### 4. ⚡ Empirical Battery Drain & Wakelock Proof (`scripts/power_audit.py`) *(Inspired by Google BatteryStats & Battery Historian)*
+* **Problem**: Users want empirical proof that background optimizations actually save battery.
+* **Remediation**: Parses `dumpsys batterystats` to quantify partial background wakelocks, CPU wakeup counts, and computed drain in mAh/hr. Provides a before-vs-after comparison mode:
+  ```text
+  ======================================================================
+   ⚡ EMPIRICAL BATTERY & WAKELOCK REDUCTION AUDIT (BEFORE vs AFTER)
+  ======================================================================
+   Metric                    | Before       | After        | Savings       
+  ----------------------------------------------------------------------
+   Partial Wakelocks         | 142          | 18           | -87.3%
+   Wakelock Active (ms)      | 930000       | 120000       | -87.1%
+   Drain Rate (mAh/hr)       | 38.0         | 12.0         | -68.4%
+  ======================================================================
+  ```
+
+### 5. 🖥️ Real-Time Screen Mirroring Bridge *(Inspired by Scrcpy)*
+* **Problem**: Validating touch responsiveness and micro-stutter requires constantly glancing back and forth between monitor and handset.
+* **Remediation**: The terminal wizard automatically detects local `scrcpy` installations (including in downloads) and exposes a 1-click launcher (`[S] 📱 Launch Real-Time Screen Mirror`) to mirror and control your phone directly from your desktop.
+
+---
+
 ## 📂 Repository Structure
 
 ```text
@@ -115,6 +204,9 @@ android-lag-fixer/
 │   ├── __init__.py                          # Package root & metadata
 │   ├── connect.py                           # Device connection & wireless pairing wizard
 │   ├── diagnose.py                          # CPU load, ZRAM, memory pressure & process auditor
+│   ├── modes.py                             # 4-tier optimization engine & package dependency graph
+│   ├── doze_boost.py                        # Deep Doze controller & deviceidle allowlist auditor
+│   ├── power_audit.py                       # Empirical batterystats wakelock & mAh drain analyzer
 │   ├── operations.py                        # Verified state engine, fallback ladder & Android 17 resolution
 │   ├── bench.py                             # Framestats jank ratio & 1% low FPS benchmark suite
 │   ├── security_audit.py                    # Sketchy apps, accessibility hijackers & permission auditor
@@ -132,13 +224,16 @@ android-lag-fixer/
 │
 ├── tests/
 │   ├── fixtures/                            # Real recorded device dumps (Samsung, Redmi, Pixel, Android 17)
+│   ├── test_modes.py                        # Mocked tests for 4 optimization modes & dependency safety
+│   ├── test_doze_boost.py                   # Mocked tests for Doze allowlist parsing & force-idle
+│   ├── test_power_audit.py                  # Mocked tests for batterystats parsing & comparison engine
 │   ├── test_operations.py                   # Automated unit tests for package mutations
 │   ├── test_compile_speed.py                # Mocked tests for ART compilation & reset points
 │   ├── test_appops_restrict.py              # Mocked tests for AppOps limits & standby buckets
 │   ├── test_rescue.py                       # Mocked tests for emergency feature rescue & recovery
 │   ├── test_export_shizuku.py               # Mocked tests for Shizuku & rollback shell exporter
 │   ├── test_update_database.py              # Mocked tests for community list parsing & database merging
-│   ├── test_wizard.py                       # Mocked tests for terminal wizard & command formulation
+│   ├── test_wizard.py                       # Mocked tests for terminal wizard, scrcpy & mode prompts
 │   └── test_oem_fixtures.py                 # Mock hardware integration tests against OEM fixtures
 │
 └── references/

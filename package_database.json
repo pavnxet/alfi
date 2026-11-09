@@ -1,59 +1,111 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "version": "1.0.0",
-  "description": "Multi-OEM Android bloatware, telemetry, and security risk database",
+  "version": "1.1.0",
+  "description": "Multi-OEM Android bloatware, telemetry, dependency graph, and security risk database",
   "categories": {
+    "carrier_bloat": {
+      "name": "Carrier Adware & Preload Stubs",
+      "packages": {
+        "com.aura.oobe.samsung": {
+          "name": "Aura / IronSource Carrier Preloader",
+          "tier": "Recommended",
+          "mode": "low",
+          "impact": "Consumes 8-15% CPU on setup and silently downloads sponsored games/apps."
+        },
+        "com.ironsource.aura.oobe": {
+          "name": "IronSource App Delivery Engine",
+          "tier": "Recommended",
+          "mode": "low",
+          "impact": "Preload stub delivering carrier-sponsored partner applications."
+        },
+        "com.sec.android.app.billing": {
+          "name": "Carrier & Samsung Billing Hub",
+          "tier": "Recommended",
+          "mode": "low",
+          "impact": "Carrier billing integration and promotional subscription telemetry."
+        },
+        "com.samsung.android.app.spage": {
+          "name": "Bixby Home / Samsung Free Feed",
+          "tier": "Recommended",
+          "mode": "low",
+          "impact": "Horizontal swipe news feed loading ads and partner news articles."
+        }
+      }
+    },
     "samsung": {
       "name": "Samsung One UI / Experience",
       "packages": {
         "com.samsung.android.sm.devicesecurity": {
           "name": "McAfee Device Security Scanner",
           "tier": "Recommended",
+          "mode": "low",
           "impact": "Consumes 10-15% background CPU constantly, causes battery drain and thermal throttling."
         },
         "com.samsung.android.spaymini": {
           "name": "Samsung Pay Mini",
           "tier": "Recommended",
+          "mode": "medium",
           "impact": "Promotional framework and payment telemetry."
         },
         "com.samsung.android.game.gamehome": {
           "name": "Game Launcher",
           "tier": "Recommended",
+          "mode": "medium",
           "impact": "Ad delivery, promotional push notifications, and background monitoring."
         },
         "com.samsung.android.game.gametools": {
           "name": "Game Tools",
           "tier": "Recommended",
+          "mode": "medium",
           "impact": "Floating overlay hooks and touch tracking."
         },
         "com.samsung.android.voc": {
           "name": "Samsung Members",
           "tier": "Recommended",
+          "mode": "medium",
           "impact": "Feedback, community notices, and diagnostic data uploads."
         },
         "com.samsung.android.aremoji": {
           "name": "AR Emoji",
           "tier": "Advanced",
+          "mode": "high",
           "impact": "3D AR avatar assets consuming ~120MB storage and background camera services."
         },
         "com.samsung.android.bixby.agent": {
           "name": "Bixby Voice Agent",
           "tier": "Advanced",
+          "mode": "high",
           "impact": "Voice recognition background wakelocks and audio daemon."
         },
         "com.samsung.android.app.reminder": {
           "name": "Samsung Reminder",
           "tier": "Advanced",
+          "mode": "high",
           "impact": "Safe to disable if using Google Keep or another calendar/reminder app."
+        },
+        "com.sec.android.app.samsungapps": {
+          "name": "Galaxy Store",
+          "tier": "Expert",
+          "mode": "ultra",
+          "dependencies": [
+            "com.osp.app.signin"
+          ],
+          "impact": "Samsung proprietary app store. Safe to remove if using Google Play, but requires confirmation."
         },
         "com.osp.app.signin": {
           "name": "Samsung Account",
-          "tier": "Unsafe",
-          "impact": "CRITICAL: Do NOT disable. Required for Samsung Cloud, Find My Mobile, and Galaxy Store."
+          "tier": "Expert",
+          "mode": "ultra",
+          "dependents": [
+            "com.sec.android.app.samsungapps",
+            "com.samsung.android.app.watchmanager"
+          ],
+          "impact": "CRITICAL DEPENDENCY: Required for Samsung Cloud, Galaxy Store, and Find My Mobile. Only disable if dependents are unused."
         },
         "com.wssyncmldm": {
           "name": "Samsung Software Update (OTA)",
           "tier": "Unsafe",
+          "mode": "never",
           "impact": "CRITICAL: Do NOT disable. Manages official firmware updates and security patches."
         }
       }
@@ -64,57 +116,84 @@
         "com.microsoft.appmanager": {
           "name": "Microsoft Link to Windows",
           "tier": "Recommended",
+          "mode": "low",
           "impact": "Known severe bug: Loops at 131% CPU in background, causing intense heat and stutter."
         },
         "com.heytap.mcs": {
           "name": "HeyTap Push Notification Service",
           "tier": "Advanced",
+          "mode": "high",
+          "dependents": [
+            "com.heytap.usercenter"
+          ],
           "impact": "Generates 100+ wakeups every 5 minutes, preventing deep sleep (disable if not using HeyTap Cloud)."
         },
         "com.oplus.statistics.rom": {
           "name": "ColorOS Telemetry & Usage Analytics",
           "tier": "Recommended",
+          "mode": "medium",
           "impact": "Uploads user statistics every 30 mins, consuming ~122MB RAM."
         },
         "com.oplus.onetrace": {
           "name": "Systrace Performance Profiler",
           "tier": "Recommended",
+          "mode": "medium",
           "impact": "Continuous kernel tracing and diagnostic logging consuming ~117MB RAM."
         },
         "com.oplus.deepthinker": {
           "name": "AI Habit & Touch Prediction Engine",
           "tier": "Recommended",
+          "mode": "medium",
           "impact": "Intercepts app launches and touch events to train local models (~112MB RAM)."
         },
         "com.oplus.commercial": {
           "name": "Commercial Ad Delivery Framework",
           "tier": "Recommended",
+          "mode": "medium",
           "impact": "Fetches promotional banners and recommended apps in system folders."
         },
         "com.oplus.crashbox": {
           "name": "Crashbox Dump Collector",
           "tier": "Recommended",
+          "mode": "medium",
           "impact": "Continuous crash dump file writes to internal storage."
         },
         "com.oplus.qualityprotect": {
           "name": "Quality Protection Telemetry",
           "tier": "Recommended",
+          "mode": "medium",
           "impact": "Background telemetry uploading hardware health metrics."
+        },
+        "com.heytap.market": {
+          "name": "HeyTap App Market",
+          "tier": "Expert",
+          "mode": "ultra",
+          "dependencies": [
+            "com.oplus.account"
+          ],
+          "impact": "Oppo/Realme OEM App Market. Duplicate store safe to remove in Ultra mode."
+        },
+        "com.oplus.account": {
+          "name": "Realme / HeyTap Account",
+          "tier": "Expert",
+          "mode": "ultra",
+          "dependents": [
+            "com.heytap.market",
+            "com.heytap.usercenter"
+          ],
+          "impact": "CRITICAL DEPENDENCY: Do NOT disable if you rely on HeyTap Cloud backup and account sync."
         },
         "com.oplus.ota": {
           "name": "Realme / ColorOS OTA Update Engine",
           "tier": "Unsafe",
+          "mode": "never",
           "impact": "CRITICAL: Do NOT disable. Handles official system upgrades and security patches."
         },
         "com.oplus.romupdate": {
           "name": "ROM Update Signature Verifier",
           "tier": "Unsafe",
+          "mode": "never",
           "impact": "CRITICAL: Do NOT disable. Verifies security patch integrity."
-        },
-        "com.oplus.account": {
-          "name": "Realme / HeyTap Account",
-          "tier": "Unsafe",
-          "impact": "CRITICAL: Do NOT disable if you rely on HeyTap Cloud backup and account sync."
         }
       }
     },
@@ -124,36 +203,62 @@
         "com.miui.msa.global": {
           "name": "MIUI System Ads (MSA)",
           "tier": "Recommended",
+          "mode": "medium",
           "impact": "Pushes system banner ads across stock apps and consumes background mobile data."
         },
         "com.miui.analytics": {
           "name": "MIUI Analytics Daemon",
           "tier": "Recommended",
+          "mode": "medium",
           "impact": "Harvests application usage patterns and device diagnostic telemetry."
         },
         "com.xiaomi.joyose": {
           "name": "Joyose Performance Throttling Service",
-          "tier": "Recommended",
+          "tier": "Advanced",
+          "mode": "high",
           "impact": "Known for aggressive CPU/GPU thermal down-throttling in games and benchmark tampering."
         },
         "com.miui.daemon": {
           "name": "MIUI System Daemon",
           "tier": "Recommended",
+          "mode": "medium",
           "impact": "Background analytics collector and log generator."
         },
         "com.miui.hybrid": {
           "name": "Quick Apps / Hybrid Framework",
           "tier": "Recommended",
+          "mode": "medium",
           "impact": "Ad delivery engine for instant mini-programs."
         },
         "com.miui.cleanmaster": {
           "name": "CleanMaster Adware Engine",
           "tier": "Recommended",
+          "mode": "medium",
           "impact": "Third-party cleaner engine bundled with ads and privacy concerns."
+        },
+        "com.xiaomi.discover": {
+          "name": "Xiaomi GetApps Store",
+          "tier": "Expert",
+          "mode": "ultra",
+          "dependencies": [
+            "com.xiaomi.account"
+          ],
+          "impact": "Xiaomi alternative app store pushing update notifications."
+        },
+        "com.xiaomi.account": {
+          "name": "Mi Account Service",
+          "tier": "Expert",
+          "mode": "ultra",
+          "dependents": [
+            "com.xiaomi.discover",
+            "com.miui.cloudservice"
+          ],
+          "impact": "CRITICAL DEPENDENCY: Required for Mi Cloud, Find Device, and Xiaomi community services."
         },
         "com.android.updater": {
           "name": "Xiaomi System Updater",
           "tier": "Unsafe",
+          "mode": "never",
           "impact": "CRITICAL: Do NOT disable. Handles HyperOS/MIUI system OTA updates."
         }
       }
@@ -164,21 +269,25 @@
         "com.facebook.katana": {
           "name": "Facebook Stub / Pre-installed App",
           "tier": "Recommended",
+          "mode": "medium",
           "impact": "OEM system pre-install with deep background wakelocks."
         },
         "com.facebook.system": {
           "name": "Facebook App Installer",
           "tier": "Recommended",
+          "mode": "medium",
           "impact": "Silent background app updater for Meta apps without Play Store interaction."
         },
         "com.facebook.appmanager": {
           "name": "Facebook App Manager",
           "tier": "Recommended",
+          "mode": "medium",
           "impact": "Persistent background service tracking app usage metrics."
         },
         "com.facebook.services": {
           "name": "Facebook Services",
           "tier": "Recommended",
+          "mode": "medium",
           "impact": "Analytics and device fingerprinting daemon."
         }
       }
@@ -189,21 +298,55 @@
         "com.google.android.configupdater": {
           "name": "Google Play System Config Updater",
           "tier": "Unsafe",
+          "mode": "never",
           "impact": "Mainline module security patch updater."
         },
         "com.google.android.webview": {
           "name": "Android System WebView",
           "tier": "Unsafe",
+          "mode": "never",
           "impact": "Renders web content inside banking, shopping, and browser apps."
+        },
+        "com.google.android.trichromelibrary": {
+          "name": "Trichrome Library (Shared WebView Code)",
+          "tier": "Unsafe",
+          "mode": "never",
+          "impact": "Shared native library for Chrome and System WebView."
+        },
+        "com.google.android.inputmethod.latin": {
+          "name": "Gboard (Google Keyboard)",
+          "tier": "Unsafe",
+          "mode": "never",
+          "impact": "System input method. Must never disable if it is the only active keyboard."
+        },
+        "com.samsung.android.honeyboard": {
+          "name": "Samsung Keyboard",
+          "tier": "Unsafe",
+          "mode": "never",
+          "impact": "System input method. Must never disable if it is the only active keyboard."
+        },
+        "com.sec.android.app.launcher": {
+          "name": "Samsung One UI Home",
+          "tier": "Unsafe",
+          "mode": "never",
+          "impact": "Default system launcher."
+        },
+        "com.miui.home": {
+          "name": "MIUI System Launcher",
+          "tier": "Unsafe",
+          "mode": "never",
+          "impact": "Default system launcher."
         },
         "com.android.systemui": {
           "name": "System UI",
           "tier": "Unsafe",
+          "mode": "never",
           "impact": "Status bar, notification shade, and navigation bar compositor."
         },
         "com.android.phone": {
           "name": "Phone / Telephony Service",
           "tier": "Unsafe",
+          "mode": "never",
           "impact": "Cellular radio, SIM management, and 911/112 emergency calls."
         }
       }

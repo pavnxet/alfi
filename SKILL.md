@@ -65,21 +65,36 @@ python scripts/security_audit.py
 - Flags suspicious permission combinations (Overlay + SMS + Background location).
 - Offers safe quarantine (`pm disable-user --user 0`) or permission revocation.
 
-### Phase 4: Safe OEM Debloating & Optimization
-Apply curated OEM profiles with automatic backup:
+### Phase 4: Calibrated Multi-Tier Optimization (Low / Medium / High / Ultra)
+Instead of applying monolithic debloating, always ask or offer the user a choice among the 4 calibrated modes:
 ```bash
-# Preview changes safely:
-python scripts/optimize.py --profile auto --dry-run
+# Interactive mode selection (prompts user to pick Low, Medium, High, or Ultra):
+python scripts/modes.py
 
-# Apply optimization:
-python scripts/optimize.py --profile auto
+# Or directly specify mode:
+python scripts/modes.py --mode low          # Zero risk: carrier stubs, 0.75x animations, cache trim
+python scripts/modes.py --mode medium       # Recommended: OEM telemetry, 0.5x, ART speed-profile, social AppOps
+python scripts/modes.py --mode high         # Aggressive: vendor bloat (Bixby/Joyose), restricted standby, 0 GB zRAM
+python scripts/modes.py --mode ultra --force-ultra # High-Risk: OEM cloud/stores, 0.0x animations (NEVER run without user consent)
 ```
-- Profiles available: `samsung`, `realme` (Oppo/OnePlus/ColorOS), `xiaomi` (MIUI/HyperOS), `google`, `carrier`, or `auto` (auto-detects connected hardware).
-- Applies only `Recommended` tier packages by default.
-- Generates a timestamped restore manifest.
-- Supports `--update-db` to merge upstream community lists from UAD-ng.
+> [!CAUTION]
+> **Agent Directive on Ultra Mode**: Autonomous agents must **NEVER** pass `--force-ultra` or execute `Ultra` mode without explicit, documented user confirmation. Ultra mode aggressively strips duplicate vendor accounts and app stores.
 
-### Phase 5: UI Snappiness & Cache Tuning
+### Phase 5: Deep Doze & Empirical Battery Proof
+```bash
+# Audit battery optimization whitelist and clean rogue pollers:
+python scripts/doze_boost.py --audit
+python scripts/doze_boost.py --clean
+
+# Empirical before-vs-after battery & wakelock reduction proof:
+python scripts/power_audit.py --reset                        # Reset stats before observation
+python scripts/power_audit.py --save before_power.json       # Record baseline
+# ... run optimizations ...
+python scripts/power_audit.py --save after_power.json        # Record post-optimization
+python scripts/power_audit.py --compare before_power.json after_power.json # Quantify % savings
+```
+
+### Phase 6: UI Snappiness & Cache Tuning
 ```bash
 python scripts/tweak_ui.py --scale 0.5 --trim-cache
 ```

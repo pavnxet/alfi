@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "android-lag-fixer"
-version = "1.0.0"
-description = "Safe, non-root Android lag fixer, performance optimizer & malware auditor over ADB"
+version = "1.1.0"
+description = "Safe, non-root Android lag fixer, multi-tier performance optimizer (Low/Medium/High/Ultra) & malware auditor over ADB"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.9"
@@ -36,6 +36,9 @@ dependencies = []
 [project.scripts]
 lagfixer = "scripts.wizard:main"
 lagfixer-wizard = "scripts.wizard:main"
+lagfixer-modes = "scripts.modes:main"
+lagfixer-power = "scripts.power_audit:main"
+lagfixer-doze = "scripts.doze_boost:main"
 lagfixer-rescue = "scripts.rescue:main"
 lagfixer-bench = "scripts.bench:main"
 lagfixer-shizuku = "scripts.export_shizuku:main"
