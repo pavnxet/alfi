@@ -96,8 +96,12 @@ class TestEntry(unittest.TestCase):
             self.assertEqual(d.call_args[0][1], ["--action", "diagnose"])
 
     def test_unknown_command_exits_2(self):
-        with patch("sys.stderr"):
+        with patch("sys.stderr") as err:
             self.assertEqual(cli.main(["nope"]), 2)
+            output = "".join(c[0][0] for c in err.write.call_args_list)
+            self.assertIn("unknown command 'nope'", output)
+            self.assertIn("usage: alfi", output)
+            self.assertNotIn("None", output)
 
     def test_help_exits_0(self):
         with patch("sys.stdout"):

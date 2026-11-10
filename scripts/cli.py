@@ -246,7 +246,7 @@ def main(argv=None):
     module_name = COMMANDS.get(command)
     if module_name is None:
         print("alfi: unknown command '%s'\n" % command, file=sys.stderr)
-        print(HELP)
+        print(render_help(), file=sys.stderr)
         return 2
     return dispatch(module_name, rest, cfg)
 

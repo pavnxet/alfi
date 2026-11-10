@@ -13,7 +13,7 @@
     <img src="https://github.com/pavnxet/alfi/actions/workflows/ci.yml/badge.svg" alt="CI Status" />
   </a>
   <img src="https://img.shields.io/badge/Release-v1.2.0-00b0ff?style=flat&logo=github" alt="Release v1.2.0" />
-  <img src="https://img.shields.io/badge/Tests-107%20Passed-success?style=flat" alt="107 Tests Passing" />
+  <img src="https://img.shields.io/badge/Tests-255%20Passed-success?style=flat" alt="255 Tests Passing" />
   <img src="https://img.shields.io/badge/Platform-Android_9_--_17+-3DDC84?style=flat&logo=android&logoColor=white" alt="Android 9 to 17+" />
   <img src="https://img.shields.io/badge/Python-3.9+-3776AB?style=flat&logo=python&logoColor=white" alt="Python 3.9+" />
   <img src="https://img.shields.io/badge/Root-No_Root_Required-blue?style=flat" alt="No Root Required" />
