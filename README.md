@@ -986,7 +986,9 @@ alfi/
 - **Report a vulnerability:** see [SECURITY.md](SECURITY.md).
 - **License:** [MIT](LICENSE) — free for personal and commercial use.
 
-If ALFi fixed your phone, a ⭐ on the repo helps other people with laggy Android devices find it.
+If ALFi fixed your phone, a ⭐ on [GitHub (pavnxet/alfi)](https://github.com/pavnxet/alfi) helps other people with laggy Android devices find it.
+
+**ALFi** is designed & maintained by [Pavneet Singh (@pavnxet)](https://github.com/pavnxet) · [Source Code](https://github.com/pavnxet/alfi) · [Report an Issue](https://github.com/pavnxet/alfi/issues).
 
 ---
 

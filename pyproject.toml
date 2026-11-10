@@ -63,4 +63,6 @@ packages = ["scripts"]
 
 [project.urls]
 Homepage = "https://github.com/pavnxet/alfi"
+Repository = "https://github.com/pavnxet/alfi"
+Documentation = "https://github.com/pavnxet/alfi#readme"
 Issues = "https://github.com/pavnxet/alfi/issues"

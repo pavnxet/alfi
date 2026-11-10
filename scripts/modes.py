@@ -547,6 +547,9 @@ def execute_mode_optimization(
 
     results = {
         "manifest_id": manifest_id,
+        "tool": "ALFi (Android Lag Fixer)",
+        "repository": "https://github.com/pavnxet/alfi",
+        "author": "pavnxet",
         "mode": mode,
         "timestamp": timestamp,
         "dry_run": dry_run,
@@ -567,6 +570,9 @@ def execute_mode_optimization(
         print(f"[*] Disabling {len(approved_pkgs)} safe packages according to {mode} tier...")
         manifest_data = {
             "manifest_version": "2.0.0",
+            "tool": "ALFi (Android Lag Fixer)",
+            "repository": "https://github.com/pavnxet/alfi",
+            "author": "pavnxet",
             "type": "mode_optimization",
             "mode": mode,
             "timestamp": timestamp,

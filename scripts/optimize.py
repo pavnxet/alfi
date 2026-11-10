@@ -187,6 +187,9 @@ def main():
     manifest_path = os.path.join(manifest_dir, manifest_name)
 
     manifest_data = {
+        "tool": "ALFi (Android Lag Fixer)",
+        "repository": "https://github.com/pavnxet/alfi",
+        "author": "pavnxet",
         "timestamp": datetime.now().isoformat(),
         "device": {
             "serial": target_serial,

@@ -62,6 +62,9 @@ def render_help():
         lines.append("")
     lines.append("  * changes the device - pair it with --dry-run first")
     lines.append("  alfi help <command> for what one command reads or changes")
+    lines.append("")
+    lines.append("  Repository & Docs : https://github.com/pavnxet/alfi")
+    lines.append("  Issues & Requests : https://github.com/pavnxet/alfi/issues")
     return "\n".join(lines)
 
 
@@ -231,7 +234,7 @@ def main(argv=None):
             from __init__ import __version__
         except ImportError:
             from scripts import __version__  # type: ignore
-        print("alfi %s" % __version__)
+        print("alfi %s - https://github.com/pavnxet/alfi" % __version__)
         return 0
 
     # Any other leading flag means "dashboard with these options" (`alfi --action modes`).

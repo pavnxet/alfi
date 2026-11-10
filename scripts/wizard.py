@@ -445,6 +445,7 @@ def print_help_screen():
                         + (t.paint("  *", "warn") if entry["mutates"] else ""))
         rows.append("")
     rows.append(t.paint("* changes the device - use --dry-run first", "muted"))
+    rows.append(t.paint("Repository & Docs: https://github.com/pavnxet/alfi", "muted"))
     u.print(u.box(rows, title="HELP - WHAT EACH COMMAND DOES"))
 
 
@@ -513,6 +514,7 @@ def print_menu(total_devices: int = 0):
     deck("SYSTEM CONTROL", sys_items)
 
     u.print(t.paint(" " + u.glyph["arrow"] + " number to run   H help   D devices   S mirror   0 exit", "muted"))
+    u.print(t.paint("  ⭐ GitHub: https://github.com/pavnxet/alfi", "muted"))
 
 
 def prompt_device_selection(
@@ -791,7 +793,7 @@ def main():
             break
 
         if choice in ["0", "exit", "quit", "q"]:
-            print(f"\n{C_GREEN}⚡ Thanks for using ALFi! Goodbye! ⚡{C_RESET}\n")
+            print(f"\n{C_GREEN}⚡ Thanks for using ALFi! Star & explore on GitHub: https://github.com/pavnxet/alfi ⚡{C_RESET}\n")
             break
 
         if choice.upper() in ("H", "?", "HELP"):
